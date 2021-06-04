@@ -11,6 +11,10 @@
 #include <iostream>
 #include <vector>
 
+//Using operators ms, ns, etc..
+#include <chrono>
+using namespace std::chrono_literals;
+
 #include "socket.hpp"
 
 struct ServerInfo
@@ -30,16 +34,20 @@ struct ServerInfo
 
 void resendmessage(ServerInfo *server_p)
 {
-    ServerInfo& server = *server_p;
+    ServerInfo &server = *server_p;
 
     std::vector<Message> &messages = server.pendingMessages;
     while (server.running)
     {
+        //TODO: mutex para messages 
         for (size_t i = 0; i < messages.size(); i++)
         {
             const Socket &clientSocket = messages[i].Dest;
-            server.socket.Send(clientSocket, messages[i].Data);
+            std::cout << "Enviando mensagem" << std::endl;
+            Socket::Send(clientSocket, messages[i].Data);
         }
+        messages.clear();
+        std::this_thread::sleep_for(1s);
     }
 }
 
@@ -48,10 +56,11 @@ void listenMessages(ServerInfo *server_p, Socket clientSocket)
     ServerInfo &server = *server_p;
     Socket &serverSocket = server.socket;
 
+    std::cout << "Escutando mensagens de " << "???" << std::endl; 
     while (server.running)
     {
-        MessageData data(serverSocket.Read(clientSocket));
-
+        MessageData data(Socket::Read(clientSocket));
+        printf("Recebido dados: %s\n", data.buf);
         //TODO: change clientSocket for real destination
         Message message(data, clientSocket);
         server.pendingMessages.push_back(message);
@@ -75,11 +84,15 @@ void joinServerThreads(const ServerInfo &server)
     }
 }
 
-void acceptClients(ServerInfo &server)
+void acceptClients(ServerInfo *server_p)
 {
+    ServerInfo &server = *server_p;
+    std::cout << "Aceitando clientes!" << std::endl;
     while (server.running)
     {
         Socket clientSocket = server.socket.Accept();
+        printf("\a\n");
+        std::cout << "Um cliente se conectou! IP = [" << "?.?.?.?" << ":" << "???" << "]]" << std::endl;
 
         std::thread *serverListenThread = new std::thread(listenMessages, &server, clientSocket);
         server.threadsVector.push_back(serverListenThread);
@@ -88,13 +101,16 @@ void acceptClients(ServerInfo &server)
 
 void startServer(ServerInfo &server, bool waitThreads = true)
 {
+    server.running = true;
     server.socket.Bind(server.address);
 
     std::thread *serverResendMessagesThread = new std::thread(resendmessage, &server);
     server.threadsVector.push_back(serverResendMessagesThread);
 
     server.socket.Listen(server.maxClients);
-    acceptClients(server);
+    
+    std::thread *acceptClientThread = new std::thread(acceptClients, &server);
+    server.threadsVector.push_back(acceptClientThread);
 
     if (waitThreads)
         joinServerThreads(server);
@@ -102,6 +118,7 @@ void startServer(ServerInfo &server, bool waitThreads = true)
 
 void endServer(ServerInfo &server)
 {
+    server.running = false;
 
     for (size_t i = 0; i < server.threadsVector.size(); i++)
         delete (server.threadsVector[i]);

@@ -60,6 +60,8 @@ class Socket
     int socketOpt = 0;
     SocketType m_Type;
 
+    IPADDR4 address;
+
 public:
     Socket(SocketType type)
     {
@@ -90,6 +92,14 @@ public:
             throw 12;
     }
 
+    void Connect(IPADDR4 addr) {
+        sockaddr_in m_Address = makeAddr(addr.ipParts, addr.port);
+
+        int errorCode = connect(m_SocketFD, (sockaddr *)&m_Address, sizeof(m_Address));
+        if (errorCode == -1)
+            throw 17;
+    }
+
     void Listen(int maxConnections)
     {
         int errorCode = listen(m_SocketFD, maxConnections);
@@ -107,7 +117,7 @@ public:
     }
     
   
-    SocketData Read(const Socket& clientSocket, int bufferMaxSize = 1024)
+    static SocketData Read(const Socket& clientSocket, int bufferMaxSize = 1024)
     {
         size_t readCount = 0;
         char readBuf[bufferMaxSize];
@@ -121,7 +131,7 @@ public:
         };
     }
 
-    void Send(const Socket &destination, const SocketData& data)
+    static void Send(const Socket &destination, const SocketData& data)
     {
         ssize_t sentByteCount = send(destination.getFD(), data.buf, data.len, 0);
 
