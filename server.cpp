@@ -10,6 +10,8 @@
 #include <thread>
 #include <iostream>
 #include <vector>
+#include <csignal>
+#include <functional>
 
 //Using operators ms, ns, etc..
 #include <chrono>
@@ -39,13 +41,28 @@ void resendmessage(ServerInfo *server_p)
     std::vector<Message> &messages = server.pendingMessages;
     while (server.running)
     {
-        //TODO: mutex para messages 
+        //TODO: mutex para messages
         for (size_t i = 0; i < messages.size(); i++)
         {
             const Socket &clientSocket = messages[i].Dest;
-            std::cout << "Enviando mensagem" << std::endl;
-            Socket::Send(clientSocket, messages[i].Data);
+            std::cout << "Enviando mensagem: " << std::string((char *)messages[i].Data.buf) << std::endl;
+            try
+            {
+                Socket::Send(clientSocket, messages[i].Data);
+            }
+            catch (ConnectionClosedException &e)
+            {
+                std::cout << "Server message resent socket has closed" << std::endl;
+                std::cout << "Reason: \t" << e.what() << std::endl;
+                return;
+            }
+            catch (std::exception &e)
+            {
+                std::cout << "Unexpected exception: \t" << e.what() << std::endl;
+                return;
+            }
         }
+
         messages.clear();
         std::this_thread::sleep_for(1s);
     }
@@ -56,14 +73,24 @@ void listenMessages(ServerInfo *server_p, Socket clientSocket)
     ServerInfo &server = *server_p;
     Socket &serverSocket = server.socket;
 
-    std::cout << "Escutando mensagens de " << "???" << std::endl; 
+    std::cout << "Escutando mensagens de "
+              << "???" << std::endl;
     while (server.running)
     {
-        MessageData data(Socket::Read(clientSocket));
-        printf("Recebido dados: %s\n", data.buf);
-        //TODO: change clientSocket for real destination
-        Message message(data, clientSocket);
-        server.pendingMessages.push_back(message);
+        try
+        {
+            MessageData data(Socket::Read(clientSocket));
+            printf("Recebido dados: %s\n", data.buf);
+            //TODO: change clientSocket for real destination
+            Message message(data, clientSocket);
+            server.pendingMessages.push_back(message);
+        }
+        catch (ConnectionClosedException &e)
+        {
+            std::cout << "Server message receiving socket has closed" << std::endl;
+            std::cout << "Reason: \t" << e.what() << std::endl;
+            return;
+        }
     }
 }
 
@@ -84,6 +111,13 @@ void joinServerThreads(const ServerInfo &server)
     }
 }
 
+void printClientStats(Socket clientSocket)
+{
+    std::cout << "Um cliente se conectou! IP = [";
+    std::cout << clientSocket.GetAddress();
+    std::cout << "]" << std::endl;
+}
+
 void acceptClients(ServerInfo *server_p)
 {
     ServerInfo &server = *server_p;
@@ -92,7 +126,8 @@ void acceptClients(ServerInfo *server_p)
     {
         Socket clientSocket = server.socket.Accept();
         printf("\a\n");
-        std::cout << "Um cliente se conectou! IP = [" << "?.?.?.?" << ":" << "???" << "]]" << std::endl;
+
+        printClientStats(clientSocket);
 
         std::thread *serverListenThread = new std::thread(listenMessages, &server, clientSocket);
         server.threadsVector.push_back(serverListenThread);
@@ -102,13 +137,21 @@ void acceptClients(ServerInfo *server_p)
 void startServer(ServerInfo &server, bool waitThreads = true)
 {
     server.running = true;
-    server.socket.Bind(server.address);
+    try
+    {
+        server.socket.Bind(server.address);
+    }
+    catch (SocketBindException &e)
+    {
+        std::cerr << e.what() << std::endl;
+        exit(-1);
+    }
 
     std::thread *serverResendMessagesThread = new std::thread(resendmessage, &server);
     server.threadsVector.push_back(serverResendMessagesThread);
 
     server.socket.Listen(server.maxClients);
-    
+
     std::thread *acceptClientThread = new std::thread(acceptClients, &server);
     server.threadsVector.push_back(acceptClientThread);
 
@@ -129,11 +172,32 @@ void endServer(ServerInfo &server)
     server.threadsVector.clear();
 }
 
+
+
 int main(int argc, char const *argv[])
 {
-
     std::cout << "Criando servidor..." << std::endl;
     ServerInfo server = createServer({{0, 0, 0, 0}, 4545});
+
+    auto handleSocketDestruction = [&server](int sig)
+    {
+        std::cout << "To vindo com " << sig << std::endl;
+
+        // server.socket.Close();
+
+        // std::cout << "Servidor encerrado abruptamente (" << sig << ") received.\n";
+        // server.running = false;
+    };
+
+    signal(SIGKILL, (void(*)(int))&handleSocketDestruction);
+    signal(SIGTERM, (void(*)(int))&handleSocketDestruction);
+    signal(SIGINT,  (void(*)(int))&handleSocketDestruction);
+    signal(SIGQUIT, (void(*)(int))&handleSocketDestruction);
+    signal(SIGTSTP, (void(*)(int))&handleSocketDestruction);
+    signal(SIGSEGV, (void(*)(int))&handleSocketDestruction);
+
+
+    
 
     std::cout << "Iniciando servidor..." << std::endl;
     startServer(server, true);

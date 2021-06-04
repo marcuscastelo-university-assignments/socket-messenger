@@ -1,7 +1,7 @@
 all: client
 
-SERVER_OBJS = server.o
-CLIENT_OBJS = client.o
+SERVER_OBJS = server.o socket.o
+CLIENT_OBJS = client.o socket.o
 
 LD_FLAGS = -pthread
 
@@ -11,5 +11,5 @@ server: $(SERVER_OBJS)
 client: $(CLIENT_OBJS)
 	g++ $(CLIENT_OBJS) -o client -O0 -ggdb $(LD_FLAGS)
 
-.c.o:
-	g++ $< -c 
+%.o: %.cpp
+	g++ $< -c -ggdb 
