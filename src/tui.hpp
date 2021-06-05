@@ -98,7 +98,12 @@ namespace tui::text
         Text Underlined();
         Text Inversed();
 
-        // private:
+        inline Text &dbg_break() {
+            __asm__("int $3");
+            return *this;
+        }
+
+        private:
         void ApplyStyle();
     };
 
@@ -110,23 +115,23 @@ namespace tui::text_literals
     text::Text operator""_b(const char *content, std::size_t);
     text::Text operator""_i(const char *content, std::size_t);
 
-    text::Text operator""_bla(const char *content, std::size_t);
-    text::Text operator""_red(const char *content, std::size_t);
-    text::Text operator""_gre(const char *content, std::size_t);
-    text::Text operator""_yel(const char *content, std::size_t);
-    text::Text operator""_blu(const char *content, std::size_t);
-    text::Text operator""_mag(const char *content, std::size_t);
-    text::Text operator""_cya(const char *content, std::size_t);
-    text::Text operator""_whi(const char *content, std::size_t);
+    text::Text operator""_fbla(const char *content, std::size_t);
+    text::Text operator""_fred(const char *content, std::size_t);
+    text::Text operator""_fgre(const char *content, std::size_t);
+    text::Text operator""_fyel(const char *content, std::size_t);
+    text::Text operator""_fblu(const char *content, std::size_t);
+    text::Text operator""_fmag(const char *content, std::size_t);
+    text::Text operator""_fcya(const char *content, std::size_t);
+    text::Text operator""_fwhi(const char *content, std::size_t);
 
-    text::Text operator""_BLA(const char *content, std::size_t);
-    text::Text operator""_RED(const char *content, std::size_t);
-    text::Text operator""_GRE(const char *content, std::size_t);
-    text::Text operator""_YEL(const char *content, std::size_t);
-    text::Text operator""_BLU(const char *content, std::size_t);
-    text::Text operator""_MAG(const char *content, std::size_t);
-    text::Text operator""_CYA(const char *content, std::size_t);
-    text::Text operator""_WHI(const char *content, std::size_t);
+    text::Text operator""_bbla(const char *content, std::size_t);
+    text::Text operator""_bred(const char *content, std::size_t);
+    text::Text operator""_bgre(const char *content, std::size_t);
+    text::Text operator""_byel(const char *content, std::size_t);
+    text::Text operator""_bblu(const char *content, std::size_t);
+    text::Text operator""_bmag(const char *content, std::size_t);
+    text::Text operator""_bcya(const char *content, std::size_t);
+    text::Text operator""_bwhi(const char *content, std::size_t);
 
 }
 

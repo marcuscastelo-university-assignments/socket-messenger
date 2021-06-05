@@ -91,23 +91,21 @@ namespace tui::text
         ss << "\033[";
 
         if ((Style.decoration & TextDecoration::Bold) == TextDecoration::Bold)
-            ss << "1;";
+            ss << "1";
         if ((Style.decoration & TextDecoration::Italic) == TextDecoration::Italic)
-            ss << "3;";
+            ss << "3";
         if ((Style.decoration & TextDecoration::Underlined) == TextDecoration::Underlined)
-            ss << "4;";
+            ss << "24";
         if ((Style.decoration & TextDecoration::Inversed) == TextDecoration::Inversed)
-            ss << "7;";
+            ss << "7";
 
+        int a = 2;
         if (Style.fgColor != TextColorF::None)
-        {
-            ss << createColorString(Style.fgColor);
-            if (Style.bgColor != TextColorB::None)
-                ss << ";";
-        }
+            ss << (--a?";":"") << createColorString(Style.fgColor) << ";";
         if (Style.bgColor != TextColorB::None)
-            ss << createColorString(Style.bgColor);
-
+            ss << (--a?";":"") << createColorString(Style.bgColor) << ";";
+        
+        if (a <= 0) ss.seekp(-1, std::ios_base::end);
         ss << "m";
 
         std::string start = ss.str();
@@ -160,6 +158,8 @@ namespace tui::text
         Text nt(*this, newStyle);
         return nt;
     }
+
+
 }
 
 namespace tui::text_literals
@@ -173,21 +173,21 @@ namespace tui::text_literals
     text::Text operator""_b(const char *content, std::size_t) { return text::Text{content}.Bold(); }
     text::Text operator""_i(const char *content, std::size_t) { return text::Text{content}.Italic(); }
 
-    text::Text operator""_bla(const char *content, std::size_t) { return text::Text{content}.WithColor(text::TextColorF::Black); }
-    text::Text operator""_red(const char *content, std::size_t) { return text::Text{content}.WithColor(text::TextColorF::Red); }
-    text::Text operator""_gre(const char *content, std::size_t) { return text::Text{content}.WithColor(text::TextColorF::Green); }
-    text::Text operator""_yel(const char *content, std::size_t) { return text::Text{content}.WithColor(text::TextColorF::Yellow); }
-    text::Text operator""_blu(const char *content, std::size_t) { return text::Text{content}.WithColor(text::TextColorF::Blue); }
-    text::Text operator""_mag(const char *content, std::size_t) { return text::Text{content}.WithColor(text::TextColorF::Magenta); }
-    text::Text operator""_cya(const char *content, std::size_t) { return text::Text{content}.WithColor(text::TextColorF::Cyan); }
-    text::Text operator""_whi(const char *content, std::size_t) { return text::Text{content}.WithColor(text::TextColorF::White); }
+    text::Text operator""_fbla(const char *content, std::size_t) { return text::Text{content}.WithColor(text::TextColorF::Black); }
+    text::Text operator""_fred(const char *content, std::size_t) { return text::Text{content}.WithColor(text::TextColorF::Red); }
+    text::Text operator""_fgre(const char *content, std::size_t) { return text::Text{content}.WithColor(text::TextColorF::Green); }
+    text::Text operator""_fyel(const char *content, std::size_t) { return text::Text{content}.WithColor(text::TextColorF::Yellow); }
+    text::Text operator""_fblu(const char *content, std::size_t) { return text::Text{content}.WithColor(text::TextColorF::Blue); }
+    text::Text operator""_fmag(const char *content, std::size_t) { return text::Text{content}.WithColor(text::TextColorF::Magenta); }
+    text::Text operator""_fcya(const char *content, std::size_t) { return text::Text{content}.WithColor(text::TextColorF::Cyan); }
+    text::Text operator""_fwhi(const char *content, std::size_t) { return text::Text{content}.WithColor(text::TextColorF::White); }
 
-    text::Text operator""_BLA(const char *content, std::size_t) { return text::Text{content}.WithColor(text::TextColorB::Black); }
-    text::Text operator""_RED(const char *content, std::size_t) { return text::Text{content}.WithColor(text::TextColorB::Red); }
-    text::Text operator""_GRE(const char *content, std::size_t) { return text::Text{content}.WithColor(text::TextColorB::Green); }
-    text::Text operator""_YEL(const char *content, std::size_t) { return text::Text{content}.WithColor(text::TextColorB::Yellow); }
-    text::Text operator""_BLU(const char *content, std::size_t) { return text::Text{content}.WithColor(text::TextColorB::Blue); }
-    text::Text operator""_MAG(const char *content, std::size_t) { return text::Text{content}.WithColor(text::TextColorB::Magenta); }
-    text::Text operator""_CYA(const char *content, std::size_t) { return text::Text{content}.WithColor(text::TextColorB::Cyan); }
-    text::Text operator""_WHI(const char *content, std::size_t) { return text::Text{content}.WithColor(text::TextColorB::White); }
+    text::Text operator""_bbla(const char *content, std::size_t) { return text::Text{content}.WithColor(text::TextColorB::Black); }
+    text::Text operator""_bred(const char *content, std::size_t) { return text::Text{content}.WithColor(text::TextColorB::Red); }
+    text::Text operator""_bgre(const char *content, std::size_t) { return text::Text{content}.WithColor(text::TextColorB::Green); }
+    text::Text operator""_byel(const char *content, std::size_t) { return text::Text{content}.WithColor(text::TextColorB::Yellow); }
+    text::Text operator""_bblu(const char *content, std::size_t) { return text::Text{content}.WithColor(text::TextColorB::Blue); }
+    text::Text operator""_bmag(const char *content, std::size_t) { return text::Text{content}.WithColor(text::TextColorB::Magenta); }
+    text::Text operator""_bcya(const char *content, std::size_t) { return text::Text{content}.WithColor(text::TextColorB::Cyan); }
+    text::Text operator""_bwhi(const char *content, std::size_t) { return text::Text{content}.WithColor(text::TextColorB::White); }
 }

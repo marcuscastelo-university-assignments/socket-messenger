@@ -123,13 +123,26 @@ int main2(int argc, char const *argv[])
 int main(int argc, char const *argv[])
 {
     tui::clear();
-    tui::printl("Bem vindo ao Zaplan"_gre);
+    tui::printl("Bem vindo ao Zaplan"_fgre);
     tui::printl();
-    tui::printl("Contatos online: " + "10"_cya.WithColor(tui::text::TextColorB::Black).Italic());
+    tui::print("Digite seu " + "nick"_t.Underlined()+ ": ");
+    tui::text::Text nick = tui::readline();
+    tui::printl("Bem vindo, " + nick.Bold());
+
+    tui::printl("Contatos online: " + "10"_fwhi.Bold());
     tui::printl();
     tui::printl();
 
-    tui::readline();
+    tui::printl("Digite " + "/help"_fcya + " para obter uma lista de comandos disponíveis");
+
+    tui::printl();
+    tui::printl();
+
+    tui::print("> "_fgre);
+    tui::text::Text test = tui::readline();
+
+    tui::printl();
+    tui::printl("[ERRO]"_bmag.WithColor(tui::text::TextColorF::White).Bold() + " O programa ainda não faz nada!!"_fred);
     return 0;
 }
 
