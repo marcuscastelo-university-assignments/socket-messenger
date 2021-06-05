@@ -27,6 +27,15 @@ bool isTuiRunning = false;
 void startTUI()
 {
     isTuiRunning = true;
+
+    tui::clear();
+    tui::printl("Bem vindo ao Zaplan"_fgre);
+    tui::printl();
+    tui::print("Digite seu " + "nick"_fwhi + ": ");
+    tui::text::Text nick = tui::readline();
+
+    tui::printl("Bem vindo, "_fred + nick.Bold());
+
     int enviados;
     char mensagem[1024];
     do
@@ -84,7 +93,7 @@ void handleSocketDestruction(int sig)
     isTuiRunning = false;
 }
 
-int main2(int argc, char const *argv[])
+int main(int argc, char const *argv[])
 {
 
     signal(SIGKILL, handleSocketDestruction);
@@ -96,7 +105,7 @@ int main2(int argc, char const *argv[])
 
     std::cout << "Criando um cliente!!" << std::endl;
 
-    IPADDR4 serverAddress{{127, 0, 0, 1}, 4545};
+    IPADDR4 serverAddress{"127.0.0.1", 4545};
 
     try
     {
@@ -120,29 +129,22 @@ int main2(int argc, char const *argv[])
     return 0;
 }
 
-int main(int argc, char const *argv[])
-{
-    tui::clear();
-    tui::printl("Bem vindo ao Zaplan"_fgre);
-    tui::printl();
-    tui::print("Digite seu " + "nick"_t.Underlined()+ ": ");
-    tui::text::Text nick = tui::readline();
-    tui::printl("Bem vindo, " + nick.Bold());
+// int main(int argc, char const *argv[])
+// {
 
-    tui::printl("Contatos online: " + "10"_fwhi.Bold());
-    tui::printl();
-    tui::printl();
+//     tui::printl("Contatos online: " + "10"_fwhi.Bold());
+//     tui::printl();
+//     tui::printl();
 
-    tui::printl("Digite " + "/help"_fcya + " para obter uma lista de comandos disponíveis");
+//     tui::printl("Digite " + "/help"_fcya + " para obter uma lista de comandos disponíveis");
 
-    tui::printl();
-    tui::printl();
+//     tui::printl();
+//     tui::printl();
 
-    tui::print("> "_fgre);
-    tui::text::Text test = tui::readline();
+//     tui::print("> "_fgre);
+//     tui::text::Text test = tui::readline();
 
-    tui::printl();
-    tui::printl("[ERRO]"_bmag.WithColor(tui::text::TextColorF::White).Bold() + " O programa ainda não faz nada!!"_fred);
-    return 0;
-}
-
+//     tui::printl();
+//     tui::printl("[ERRO]"_bmag.WithColor(tui::text::TextColorF::White).Bold() + " O programa ainda não faz nada!!"_fred);
+//     return 0;
+// }

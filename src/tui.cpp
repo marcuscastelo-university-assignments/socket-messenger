@@ -90,26 +90,38 @@ namespace tui::text
         std::stringstream ss;
         ss << "\033[";
 
-        if ((Style.decoration & TextDecoration::Bold) == TextDecoration::Bold)
-            ss << "1";
-        if ((Style.decoration & TextDecoration::Italic) == TextDecoration::Italic)
-            ss << "3";
-        if ((Style.decoration & TextDecoration::Underlined) == TextDecoration::Underlined)
-            ss << "24";
-        if ((Style.decoration & TextDecoration::Inversed) == TextDecoration::Inversed)
-            ss << "7";
+        bool hasTD = Style.decoration != TextDecoration::None;
+        bool hasFG = Style.fgColor != TextColorF::None;
+        bool hasBG = Style.bgColor != TextColorB::None;
 
-        int a = 2;
+        if ((Style.decoration & TextDecoration::Bold) == TextDecoration::None)
+            ss << "0;";
+        if ((Style.decoration & TextDecoration::Bold) == TextDecoration::Bold)
+            ss << "1;";
+        if ((Style.decoration & TextDecoration::Italic) == TextDecoration::Italic)
+            ss << "3;";
+        if ((Style.decoration & TextDecoration::Underlined) == TextDecoration::Underlined)
+            ss << "4;";
+        if ((Style.decoration & TextDecoration::Inversed) == TextDecoration::Inversed)
+            ss << "7;";
+
         if (Style.fgColor != TextColorF::None)
-            ss << (--a?";":"") << createColorString(Style.fgColor) << ";";
+            ss << createColorString(Style.fgColor) << ";";
         if (Style.bgColor != TextColorB::None)
-            ss << (--a?";":"") << createColorString(Style.bgColor) << ";";
-        
-        if (a <= 0) ss.seekp(-1, std::ios_base::end);
+            ss << createColorString(Style.bgColor) << ";";
+
+        ss.seekp(-1, std::ios_base::end); //Prereq to temove last semicolon (actually just move the cursor to end-1)
         ss << "m";
 
         std::string start = ss.str();
-        std::string end = "\033[0;39;49m";
+        std::string end = "\033["; //Reset to normal if changed
+        if (hasTD)
+            end += "0";
+        if (hasFG)
+            end += "39";
+        if (hasBG)
+            end += "49";
+        end += "m";
 
         assign(start + this->Content + end);
     }
@@ -129,6 +141,25 @@ namespace tui::text
         Text nt(*this, newStyle);
         return nt;
     }
+
+    Text Text::NoFColor() { return WithColor(TextColorF::None); }
+    Text Text::FBlack() { return WithColor(TextColorF::Black); }
+    Text Text::FRed() { return WithColor(TextColorF::Red); }
+    Text Text::FGreen() { return WithColor(TextColorF::Green); }
+    Text Text::FYellow() { return WithColor(TextColorF::Yellow); }
+    Text Text::FBlue() { return WithColor(TextColorF::Blue); }
+    Text Text::FMagenta() { return WithColor(TextColorF::Magenta); }
+    Text Text::FCyan() { return WithColor(TextColorF::Cyan); }
+    Text Text::FWhite() { return WithColor(TextColorF::White); }
+    Text Text::NoBColor() { return WithColor(TextColorB::None); }
+    Text Text::BBlack() { return WithColor(TextColorB::Black); }
+    Text Text::BRed() { return WithColor(TextColorB::Red); }
+    Text Text::BGreen() { return WithColor(TextColorB::Green); }
+    Text Text::BYellow() { return WithColor(TextColorB::Yellow); }
+    Text Text::BBlue() { return WithColor(TextColorB::Blue); }
+    Text Text::BMagenta() { return WithColor(TextColorB::Magenta); }
+    Text Text::BCyan() { return WithColor(TextColorB::Cyan); }
+    Text Text::BWhite() { return WithColor(TextColorB::White); }
 
     Text Text::Bold()
     {
@@ -159,6 +190,10 @@ namespace tui::text
         return nt;
     }
 
+    // Text Text::operator+(const Text &other) const
+    // {
+    //     return Text{this->Content + other.Content};
+    // }
 
 }
 

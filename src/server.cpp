@@ -19,6 +19,7 @@ using namespace std::chrono_literals;
 
 #include "socket.hpp"
 
+//Estrutura auxiliar que armazena informações essenciais para o server
 struct ServerInfo
 {
     Socket socket;
@@ -34,6 +35,13 @@ struct ServerInfo
     ServerInfo(Socket serverSocket, IPADDR4 address, int maxClients) : socket(serverSocket), address(address), maxClients(maxClients) {}
 };
 
+/**
+    * Função responsável por reenviar a mensagem recebida do cliente para o cliente alvo
+    *
+    * Parâmetros: ServerInfo *server_p => possui as mensagens a serem reenviadas
+    *
+    * Retorno: void
+*/
 void resendmessage(ServerInfo *server_p)
 {
     ServerInfo &server = *server_p;
@@ -42,9 +50,10 @@ void resendmessage(ServerInfo *server_p)
     while (server.running)
     {
         //TODO: mutex para messages
+        //itera todas as mensagens pendentes atualmente no servidor
         for (size_t i = 0; i < messages.size(); i++)
         {
-            const Socket &clientSocket = messages[i].Dest;
+            const Socket &clientSocket = messages[i].Dest; 
             std::cout << "Enviando mensagem: " << std::string((char *)messages[i].Data.buf) << std::endl;
             try
             {
@@ -68,13 +77,21 @@ void resendmessage(ServerInfo *server_p)
     }
 }
 
+/**
+     * Função responsável por receber e armazenar informações mandadas pelo cliente 
+     *
+     * Parâmetros: ServerInfo *server_p => armazena informações recebidas
+     *             Socket clientSocket  => possui as informações a serem armazenadas
+     *
+     * Retorno: void
+    */
 void listenMessages(ServerInfo *server_p, Socket clientSocket)
 {
     ServerInfo &server = *server_p;
     Socket &serverSocket = server.socket;
 
     std::cout << "Escutando mensagens de "
-              << "???" << std::endl;
+              << clientSocket.GetAddress() << std::endl;
     while (server.running)
     {
         try
@@ -94,7 +111,15 @@ void listenMessages(ServerInfo *server_p, Socket clientSocket)
     }
 }
 
-ServerInfo createServer(IPADDR4 address = {{0, 0, 0, 0}, 4545})
+/**
+     * Função responsável por criar o server
+     *
+     * Parâmetros: IPADDR4 address = {"0.0.0.0", 4545} => valores de porta 
+     *             
+     *
+     * Retorno: ServerInfo => o server criado
+    */
+ServerInfo createServer(IPADDR4 address = {"0.0.0.0", 4545})
 {
     Socket serverSocket(SocketType::TCP);
 
@@ -172,12 +197,10 @@ void endServer(ServerInfo &server)
     server.threadsVector.clear();
 }
 
-
-
 int main(int argc, char const *argv[])
 {
     std::cout << "Criando servidor..." << std::endl;
-    ServerInfo server = createServer({{0, 0, 0, 0}, 4545});
+    ServerInfo server = createServer();
 
     auto handleSocketDestruction = [&server](int sig)
     {
@@ -189,15 +212,12 @@ int main(int argc, char const *argv[])
         // server.running = false;
     };
 
-    signal(SIGKILL, (void(*)(int))&handleSocketDestruction);
-    signal(SIGTERM, (void(*)(int))&handleSocketDestruction);
-    signal(SIGINT,  (void(*)(int))&handleSocketDestruction);
-    signal(SIGQUIT, (void(*)(int))&handleSocketDestruction);
-    signal(SIGTSTP, (void(*)(int))&handleSocketDestruction);
-    signal(SIGSEGV, (void(*)(int))&handleSocketDestruction);
-
-
-    
+    signal(SIGKILL, (void (*)(int)) & handleSocketDestruction);
+    signal(SIGTERM, (void (*)(int)) & handleSocketDestruction);
+    signal(SIGINT, (void (*)(int)) & handleSocketDestruction);
+    signal(SIGQUIT, (void (*)(int)) & handleSocketDestruction);
+    signal(SIGTSTP, (void (*)(int)) & handleSocketDestruction);
+    signal(SIGSEGV, (void (*)(int)) & handleSocketDestruction);
 
     std::cout << "Iniciando servidor..." << std::endl;
     startServer(server, true);
