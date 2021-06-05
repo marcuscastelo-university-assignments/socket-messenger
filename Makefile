@@ -12,8 +12,8 @@ CXX_FLAGS := $(DEBUG_FLAGS) $(LD_FLAGS)
 
 # Binaries and it's dependencies
 RULES := server client
-SERVER_OBJS := server.o socket.o
-CLIENT_OBJS := client.o socket.o
+SERVER_OBJS := server.o socket.o tui.o
+CLIENT_OBJS := client.o socket.o tui.o
 #
 
 # Project structure
@@ -43,6 +43,14 @@ $(shell mkdir -p $(SUBDIRS))
 server: .EXTRA_PREREQS = ./bin/server
 client: .EXTRA_PREREQS = ./bin/client
 
+ifeq (run, $(filter run,$(MAKECMDGOALS)))
+.PHONY: server client
+server:
+	@./bin/server
+client:
+	@./bin/client
+endif
+
 # Inform which objects are used by each binary
 ./bin/server: $(SERVER_OBJS)
 ./bin/client: $(CLIENT_OBJS)
@@ -50,6 +58,10 @@ client: .EXTRA_PREREQS = ./bin/client
 # Create binary out of objects
 $(BINARIES):
 	$(CXX) $^ -o $@ $(CXX_FLAGS)
+
+.PHONY: run
+run:
+	@echo >/dev/null
 
 # Convert cpp to obj files
 $(OBJ_DIR)/%.o: $(SRC_DIR)/%.cpp 

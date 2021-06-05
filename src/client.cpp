@@ -18,12 +18,15 @@
 using namespace std::chrono_literals;
 
 #include "socket.hpp"
+#include "tui.hpp"
+using namespace tui::text_literals;
+
 Socket serverSocket(SocketType::TCP);
 
-bool tui = false;
+bool isTuiRunning = false;
 void startTUI()
 {
-    tui = true;
+    isTuiRunning = true;
     int enviados;
     char mensagem[1024];
     do
@@ -46,15 +49,15 @@ void startTUI()
             std::cout << "Unable to send message. Is server closed?" << std::endl;
             std::cout << "Reason:\t" << e.what() << std::endl;
         }
-    } while (tui && strcmp(mensagem, "exit") != 0);
+    } while (isTuiRunning && strcmp(mensagem, "exit") != 0);
 
-    tui = false;
+    isTuiRunning = false;
 }
 
 void receiveMessages()
 {
     std::this_thread::sleep_for(1s);
-    while (tui)
+    while (isTuiRunning)
     {
         try
         {
@@ -64,7 +67,7 @@ void receiveMessages()
         catch (ConnectionClosedException &e)
         {
             std::cout << "Server offline." << std::endl;
-            tui = false;
+            isTuiRunning = false;
             fclose(stdin);
             return;
         }
@@ -78,10 +81,10 @@ void handleSocketDestruction(int sig)
     serverSocket.Close();
 
     // std::cout << "Cliente encerrado abruptamente (" << sig << ") received.\n";
-    tui = false;
+    isTuiRunning = false;
 }
 
-int main(int argc, char const *argv[])
+int main2(int argc, char const *argv[])
 {
 
     signal(SIGKILL, handleSocketDestruction);
@@ -116,3 +119,17 @@ int main(int argc, char const *argv[])
 
     return 0;
 }
+
+int main(int argc, char const *argv[])
+{
+    tui::clear();
+    tui::printl("Bem vindo ao Zaplan"_gre);
+    tui::printl();
+    tui::printl("Contatos online: " + "10"_cya.WithColor(tui::text::TextColorB::Black).Italic());
+    tui::printl();
+    tui::printl();
+
+    tui::readline();
+    return 0;
+}
+
