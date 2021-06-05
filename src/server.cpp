@@ -13,6 +13,7 @@
 #include <csignal>
 #include <functional>
 #include <unordered_map>
+#include "tui.hpp"
 
 //Using operators ms, ns, etc..
 #include <chrono>
@@ -51,8 +52,10 @@ struct ServerInfo
         {
             auto it = find(nick);
 
-            if (it == clientSockets.end()) return false;
-            if (find(it->second) == socketClients.end()) throw std::runtime_error("Inconsistency in bimap! this IS a bug.");
+            if (it == clientSockets.end())
+                return false;
+            if (find(it->second) == socketClients.end())
+                throw std::runtime_error("Inconsistency in bimap! this IS a bug.");
 
             clientSockets.erase(it);
             socketClients.erase(it->second);
@@ -146,8 +149,9 @@ void listenMessages(ServerInfo *server_p, Socket clientSocket)
         try
         {
             auto it = server.biMapClientSocket.socketClients.find(clientSocket);
-            if (it == server.biMapClientSocket.socketClients.end()) continue;
-            
+            if (it == server.biMapClientSocket.socketClients.end())
+                continue;
+
             SocketBuffer recBuf = Socket::Read(clientSocket);
             Message message(it->second, recBuf);
             printf("Recebido dados: %s\n", recBuf.buf);
@@ -196,6 +200,38 @@ void printClientStats(Socket clientSocket)
     std::cout << "]" << std::endl;
 }
 
+bool waitForIdentification(ServerInfo& server, const Socket &clientSocket)
+{
+    SocketBuffer recBuf = Socket::Read(clientSocket);
+
+    //TODO: function for this ugly logic
+    char *command = recBuf.buf;
+    char *nick = recBuf.buf;
+    for (int i = 0; i < recBuf.len; i++)
+    {
+        if (recBuf.buf[i] == '=')
+        {
+            recBuf.buf[i] = '\0';
+            nick = recBuf.buf + i + 1;
+            break;
+        }
+    }
+    std::string strCommand(command);
+    std::string strNick(nick);
+
+    //Wrong command
+    if (strCommand != "nick")
+        return false;
+
+    //No nick provided (nick pointer not changed)
+    if (nick == recBuf.buf)
+        return false;
+
+    server.biMapClientSocket.insert(strNick, clientSocket);
+
+    return true;
+}
+
 void acceptClients(ServerInfo *server_p)
 {
     ServerInfo &server = *server_p;
@@ -203,9 +239,17 @@ void acceptClients(ServerInfo *server_p)
     while (server.running)
     {
         Socket clientSocket = server.socket.Accept();
+
+        //TODO: tirar
         printf("\a\n");
 
-        server.biMapClientSocket.insert("marucs", clientSocket);
+        while (!waitForIdentification(server, clientSocket))
+        {
+            static const char *errorMessage = "INVALID_NICK\0";
+            static const size_t errorMessageLen = strlen(errorMessage) + 1;
+            Socket::Send(clientSocket, SocketBuffer{errorMessage, errorMessageLen}); 
+            std::this_thread::sleep_for(1s);
+        }
 
         printClientStats(clientSocket);
 
@@ -254,6 +298,8 @@ void endServer(ServerInfo &server)
 
 int main(int argc, char const *argv[])
 {
+    tui::clear();
+
     std::cout << "Criando servidor..." << std::endl;
     ServerInfo server = createServer();
 

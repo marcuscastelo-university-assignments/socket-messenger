@@ -211,6 +211,9 @@ Message::Message(const std::string &fromUser, const SocketBuffer &sd)
     ToUser = parts[1];
     Content = parts[2];
     free(buf);
+
+    //TODO: tratar melhor
+    if (FromUser != fromUser) std::cerr << "Impersonation detected!" << std::endl;
 }
 
 

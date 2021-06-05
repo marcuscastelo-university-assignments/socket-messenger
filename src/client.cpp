@@ -36,6 +36,18 @@ void startTUI()
 
     tui::printl("Bem vindo, "_fred + nick.Bold());
 
+    try
+    {
+        std::string bufContet = "nick=" + nick.Content;
+        Socket::Send(serverSocket, SocketBuffer{ bufContet.c_str(), bufContet.length()+1 });
+    }
+    catch (ConnectionFailedException &e)
+    {
+        std::cerr << "Unable to send username to server" << ".\nReason:\n\t ";
+        std::cerr << e.what() << std::endl;
+        throw e;
+    }
+
     int enviados;
     char mensagem[1024];
     do
