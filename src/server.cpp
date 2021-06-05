@@ -12,6 +12,7 @@
 #include <vector>
 #include <csignal>
 #include <functional>
+#include <unordered_map>
 
 //Using operators ms, ns, etc..
 #include <chrono>
@@ -31,6 +32,40 @@ struct ServerInfo
     std::vector<std::thread *> threadsVector = {};
 
     std::vector<Message> pendingMessages = {};
+
+    struct
+    {
+        std::unordered_map<std::string, Socket> clientSockets = {};
+        std::unordered_map<Socket, std::string> socketClients = {};
+
+        std::unordered_map<std::string, Socket>::iterator find(const std::string &nick) { return clientSockets.find(nick); }
+        std::unordered_map<Socket, std::string>::iterator find(const Socket &socket) { return socketClients.find(socket); }
+
+        void insert(const std::string &nick, const Socket &socket)
+        {
+            clientSockets.insert({nick, socket});
+            socketClients.insert({socket, nick});
+        }
+
+        bool erase(const std::string &nick)
+        {
+            auto it = find(nick);
+
+            if (it == clientSockets.end()) return false;
+            if (find(it->second) == socketClients.end()) throw std::runtime_error("Inconsistency in bimap! this IS a bug.");
+
+            clientSockets.erase(it);
+            socketClients.erase(it->second);
+
+            return true;
+        }
+
+        bool erase(const Socket &socket)
+        {
+            return socketClients.erase(socket);
+        }
+
+    } biMapClientSocket;
 
     ServerInfo(Socket serverSocket, IPADDR4 address, int maxClients) : socket(serverSocket), address(address), maxClients(maxClients) {}
 };
@@ -53,11 +88,25 @@ void resendmessage(ServerInfo *server_p)
         //itera todas as mensagens pendentes atualmente no servidor
         for (size_t i = 0; i < messages.size(); i++)
         {
-            const Socket &clientSocket = messages[i].Dest; 
-            std::cout << "Enviando mensagem: " << std::string((char *)messages[i].Data.buf) << std::endl;
+            Message &message = messages[i];
+
+            const std::string &destUser = message.ToUser;
+            auto destSocket = server.biMapClientSocket.clientSockets.find(destUser);
+
+            if (destSocket == server.biMapClientSocket.clientSockets.end())
+            {
+                message.Content = "User " + message.ToUser + " not found (or offline)";
+                message.ToUser = message.FromUser;
+                message.FromUser = "System";
+                destSocket = server.biMapClientSocket.clientSockets.find(message.ToUser);
+                if (destSocket == server.biMapClientSocket.clientSockets.end())
+                    continue;
+            }
+
+            std::cout << "Enviando mensagem: " << message.Content << " para " << message.ToUser << std::endl;
             try
             {
-                Socket::Send(clientSocket, messages[i].Data);
+                Socket::Send(destSocket->second, message.ToBuffer());
             }
             catch (ConnectionClosedException &e)
             {
@@ -78,13 +127,13 @@ void resendmessage(ServerInfo *server_p)
 }
 
 /**
-     * Função responsável por receber e armazenar informações mandadas pelo cliente 
-     *
-     * Parâmetros: ServerInfo *server_p => armazena informações recebidas
-     *             Socket clientSocket  => possui as informações a serem armazenadas
-     *
-     * Retorno: void
-    */
+    * Função responsável por receber e armazenar informações mandadas pelo cliente 
+    *
+    * Parâmetros: ServerInfo *server_p => armazena informações recebidas
+    *             Socket clientSocket  => possui as informações a serem armazenadas
+    *
+    * Retorno: void
+ */
 void listenMessages(ServerInfo *server_p, Socket clientSocket)
 {
     ServerInfo &server = *server_p;
@@ -96,10 +145,14 @@ void listenMessages(ServerInfo *server_p, Socket clientSocket)
     {
         try
         {
-            MessageData data(Socket::Read(clientSocket));
-            printf("Recebido dados: %s\n", data.buf);
+            auto it = server.biMapClientSocket.socketClients.find(clientSocket);
+            if (it == server.biMapClientSocket.socketClients.end()) continue;
+            
+            SocketBuffer recBuf = Socket::Read(clientSocket);
+            Message message(it->second, recBuf);
+            printf("Recebido dados: %s\n", recBuf.buf);
+            printf("Convertido de volta dados: %s\n", message.ToBuffer().buf);
             //TODO: change clientSocket for real destination
-            Message message(data, clientSocket);
             server.pendingMessages.push_back(message);
         }
         catch (ConnectionClosedException &e)
@@ -152,6 +205,8 @@ void acceptClients(ServerInfo *server_p)
         Socket clientSocket = server.socket.Accept();
         printf("\a\n");
 
+        server.biMapClientSocket.insert("marucs", clientSocket);
+
         printClientStats(clientSocket);
 
         std::thread *serverListenThread = new std::thread(listenMessages, &server, clientSocket);
@@ -191,8 +246,8 @@ void endServer(ServerInfo &server)
     for (size_t i = 0; i < server.threadsVector.size(); i++)
         delete (server.threadsVector[i]);
 
-    shutdown(server.socket.getFD(), 2);
-    close(server.socket.getFD());
+    shutdown(server.socket.GetFD(), 2);
+    close(server.socket.GetFD());
 
     server.threadsVector.clear();
 }

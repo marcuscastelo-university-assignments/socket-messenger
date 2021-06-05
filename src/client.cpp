@@ -70,7 +70,7 @@ void receiveMessages()
     {
         try
         {
-            SocketData data = Socket::Read(serverSocket);
+            SocketBuffer data = Socket::Read(serverSocket);
             printf("<< Mensagem recebida: \"%s\"\n", (char *)data.buf);
         }
         catch (ConnectionClosedException &e)
@@ -123,7 +123,7 @@ int main(int argc, char const *argv[])
     std::thread receiveServerMessages(receiveMessages);
     startTUI();
 
-    close(serverSocket.getFD());
+    close(serverSocket.GetFD());
     receiveServerMessages.join();
 
     return 0;

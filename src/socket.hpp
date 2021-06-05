@@ -42,21 +42,23 @@ struct IPADDR4
 };
 
 //Estrutura auxiliar para armazenar as informações do Socket
-struct SocketData
+struct SocketBuffer
 {
     char *buf;
     size_t len;
-    SocketData(const void *_buf, size_t _len);
-    SocketData(const SocketData &other);
+    SocketBuffer(const void *_buf, size_t _len);
+    SocketBuffer(const SocketBuffer &other);
 
-    ~SocketData();
+    ~SocketBuffer();
 };
 
 //Estrutura auxiliar que armazena os dados da informação contida no socket
-struct MessageData : public SocketData
+struct Message
 {
-    MessageData(const std::string &text);
-    MessageData(const SocketData &sd);
+    std::string Content, FromUser, ToUser;
+    Message(const std::string &fromUser, const std::string &destUser, const std::string &content);
+    Message(const std::string &fromUser, const SocketBuffer &buf);
+    SocketBuffer ToBuffer();
 };
 
 //Operador que auxilia no cout(impressão) do IP
@@ -77,7 +79,7 @@ class User
 };
 
 //Enum que define se o protocolo é TCP ou UDP
-enum SocketType
+enum SocketType : int
 {
     TCP = SOCK_STREAM,
     UDP = SOCK_DGRAM
@@ -89,16 +91,16 @@ class Socket
     int m_SocketFD;
     SocketType m_Type;
     IPADDR4 m_Address;
-    
+
     sockaddr_in m_NativeAddress;
 
     std::vector<int> m_AcceptedSockets = {};
 
-
 public:
     //Funções que retornam o endereço e o socket utilizado
-    const inline IPADDR4 &GetAddress() { return m_Address; }
-    inline const int getFD() const { return m_SocketFD; }
+    inline const IPADDR4 &GetAddress() const { return m_Address; }
+    inline const int GetFD() const { return m_SocketFD; }
+    inline const SocketType GetType() const { return m_Type; }
 
     //Construtor da classe Socket, que retorna um socket do tipo passado como argumento
     Socket(SocketType type);
@@ -159,7 +161,7 @@ public:
      *
      * Retorno: SocketData  =>  Informações adquiridas pelo socket cliente
     */
-    static SocketData Read(const Socket &clientSocket, int bufferMaxSize = 1024);
+    static SocketBuffer Read(const Socket &clientSocket, int bufferMaxSize = 1024);
 
     /**
      * Função estática que envia um pacote de dados para um socket destino
@@ -169,13 +171,22 @@ public:
      *
      * Retorno: void
     */
-    static void Send(const Socket &destination, const SocketData &data);
+    static void Send(const Socket &destination, const SocketBuffer &data);
+
+
+    //TODO: comentar
+    bool operator==(const Socket& other) const;
 };
 
-//Estrutura auxiliar de mensagem, que armazena as informações e o destino
-struct Message
+template <>
+struct std::hash<Socket>
 {
-    MessageData Data;
-    const Socket &Dest;
-    Message(MessageData data, Socket dest);
+    std::size_t operator()(const Socket &sock) const
+    {
+        return (
+            std::hash<int>()(sock.GetFD()) ^
+            std::hash<int>()(sock.GetType()) ^
+            std::hash<std::string>()(sock.GetAddress().ip) ^
+            std::hash<int>()(sock.GetAddress().port));
+    }
 };

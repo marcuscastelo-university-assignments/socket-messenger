@@ -36,15 +36,15 @@ sockaddr_in makeAddr(std::string ip, int port)
     return addr;
 }
 
-SocketData::SocketData(const void *_buf, size_t _len) : len(_len)
+SocketBuffer::SocketBuffer(const void *_buf, size_t _len) : len(_len)
 {
     buf = (char *)malloc(len);
     mempcpy(buf, _buf, len);
 }
 
-SocketData::SocketData(const SocketData &other) : SocketData(other.buf, other.len) {}
+SocketBuffer::SocketBuffer(const SocketBuffer &other) : SocketBuffer(other.buf, other.len) {}
 
-SocketData::~SocketData()
+SocketBuffer::~SocketBuffer()
 {
     free(buf);
 }
@@ -67,7 +67,8 @@ Socket::Socket(int socketFD, SocketType type, IPADDR4 address)
 void Socket::Bind(IPADDR4 addr)
 {
     //FIXME: ipParts
-    m_NativeAddress = makeAddr(addr.ip, addr.port);;
+    m_NativeAddress = makeAddr(addr.ip, addr.port);
+    ;
     m_Address = addr;
 
     int errorCode = bind(m_SocketFD, (sockaddr *)&m_NativeAddress, sizeof(m_NativeAddress));
@@ -113,11 +114,12 @@ Socket Socket::Accept()
     // int sockClientFD = accept(m_SocketFD, 0, 0);
     struct sockaddr_in remoteaddr;
     socklen_t remoteaddr_len = sizeof(remoteaddr);
-    int sockClientFD = accept(m_SocketFD, (sockaddr*)&remoteaddr, &remoteaddr_len);
-    if (sockClientFD == -1) {
+    int sockClientFD = accept(m_SocketFD, (sockaddr *)&remoteaddr, &remoteaddr_len);
+    if (sockClientFD == -1)
+    {
         throw std::runtime_error("Error on Socket::Accept! errno = " + errno);
     }
-        
+
     IPADDR4 clientAddress{inet_ntoa(remoteaddr.sin_addr), ntohs(remoteaddr.sin_port)};
 
     m_AcceptedSockets.push_back(sockClientFD);
@@ -127,12 +129,12 @@ Socket Socket::Accept()
 
 //Static funcs
 
-SocketData Socket::Read(const Socket &clientSocket, int bufferMaxSize)
+SocketBuffer Socket::Read(const Socket &clientSocket, int bufferMaxSize)
 {
     size_t readCount = 0;
     char readBuf[bufferMaxSize];
 
-    readCount = recv(clientSocket.getFD(), readBuf, bufferMaxSize, 0); /* Recebe mensagem do cliente */
+    readCount = recv(clientSocket.GetFD(), readBuf, bufferMaxSize, 0); /* Recebe mensagem do cliente */
 
     if (readCount == 0)
     {
@@ -146,15 +148,15 @@ SocketData Socket::Read(const Socket &clientSocket, int bufferMaxSize)
 
     readBuf[readCount] = '\0';
 
-    return (SocketData){
+    return (SocketBuffer){
         readBuf,
         readCount,
     };
 }
 
-void Socket::Send(const Socket &destination, const SocketData &data)
+void Socket::Send(const Socket &destination, const SocketBuffer &data)
 {
-    ssize_t sentByteCount = send(destination.getFD(), data.buf, data.len, 0);
+    ssize_t sentByteCount = send(destination.GetFD(), data.buf, data.len, 0);
 
     if (sentByteCount == -1)
     {
@@ -168,7 +170,60 @@ void Socket::Send(const Socket &destination, const SocketData &data)
     }
 }
 
-MessageData::MessageData(const std::string &text) : SocketData(text.c_str(), text.length()) {}
-MessageData::MessageData(const SocketData &sd) : SocketData(sd.buf, sd.len) {}
+bool Socket::operator==(const Socket &other) const {
+    return m_Type == other.m_Type && m_SocketFD == other.m_SocketFD && m_Address.ip == other.m_Address.ip && m_Address.port == other.m_Address.port;
+}
 
-Message::Message(MessageData data, Socket dest) : Data(data), Dest(dest) {}
+Message::Message(const std::string &fromUser, const std::string &content, const std::string &destUser)
+    : FromUser(fromUser), Content(content), ToUser(destUser) {}
+
+Message::Message(const std::string &fromUser, const SocketBuffer &sd)
+{
+    char *buf = strdup(sd.buf);
+
+    int i = 0;
+    char *commandPart= buf; 
+    
+    char *parts[3] = {buf, buf, buf};
+    int partIdx = 0;
+
+    for (; i < sd.len; i++)
+    {
+        if (buf[i] == '=') {
+            buf[i] = '\0';
+            parts[partIdx++] = buf + i + 1;
+            break;
+        }
+    }
+
+    for (; i < sd.len && partIdx < 3; i++)
+    {
+        if (sd.buf[i] == ':') {
+            buf[i] = '\0';
+            parts[partIdx++] = buf + i + 1;
+        }
+    }
+
+    if (partIdx < 4) std::cerr << "Malformed buffer (unknown reason)" << std::endl;
+
+    std::string command(commandPart);
+    FromUser = parts[0];
+    ToUser = parts[1];
+    Content = parts[2];
+    free(buf);
+}
+
+
+SocketBuffer Message::ToBuffer()
+{
+    std::stringstream ss;
+    ss << "msg=" << FromUser << ":" << ToUser << ":" << Content;
+    auto bufstr = ss.str();
+    char *buf = strdup(bufstr.c_str());
+    SocketBuffer sb = {
+        buf,
+        bufstr.length()+1
+    };
+
+    return sb;
+}
