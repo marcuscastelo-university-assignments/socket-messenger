@@ -24,6 +24,9 @@ using namespace std::chrono_literals;
 
 #include "server.hpp"
 
+#include "server_tui.hpp"
+
+
 /**
     * Função responsável por reenviar a mensagem recebida do cliente para o cliente alvo
     *
@@ -252,9 +255,14 @@ int main(int argc, char const *argv[])
     tui::clear();
     ServerInfo server = createServer();
 
-    tui::printl("Inicializando o Zaplan Server"_fgre);
+    tui::printl("Inicializando o Zaplan Server..."_fgre);
     tui::down(2);
-    startServer(server, true);
+    // startServer(server, true);
+
+    tui::ServerTUI serverTui(server);
+    
+    std::this_thread::sleep_for(500ms);
+    serverTui.Enter();
 
     tui::printl("Fechando o servidor..."_fyel);
     endServer(server);

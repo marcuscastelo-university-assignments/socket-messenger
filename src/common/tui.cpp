@@ -26,6 +26,20 @@ namespace tui
         printf("\033[H\033[J");
     }
 
+    void color(text::TextColorF fg)
+    {
+        printf("\033[%sm", text::createColorString(fg).c_str());
+    }
+    void color(text::TextColorB bg)
+    {
+        printf("\033[%sm", text::createColorString(bg).c_str());
+    }
+    void creset()
+    {
+        color(text::TextColorF::None);
+        color(text::TextColorB::None);
+    }
+
     void cursor(int x, int y)
     {
         printf("\033[%d;%df", y, x);
@@ -34,9 +48,17 @@ namespace tui
     {
         printf("\033[%dA", std::max(1, amount));
     }
+    void ups(int amount)
+    {
+        printf("\033[%dF", std::max(1, amount));
+    }
     void down(int amount)
     {
         printf("\033[%dB", std::max(1, amount));
+    }
+    void downs(int amount)
+    {
+        printf("\033[%dE", std::max(1, amount));
     }
     void left(int amount)
     {
@@ -64,14 +86,22 @@ namespace tui
     }
     void rbPos()
     {
-        printf("\033[ou");
+        printf("\033[u");
+    }
+    void saveScreen()
+    {
+        printf("\033[?47h");
+    }
+    void rbScreen()
+    {
+        printf("\033[?47l");
     }
 
     std::pair<int, int> getSize()
     {
         winsize size;
         ioctl(1, TIOCGWINSZ, &size);
-        return { size.ws_col, size.ws_row };
+        return {size.ws_col, size.ws_row};
     }
 
     std::string readline()
@@ -80,10 +110,35 @@ namespace tui
         std::getline(std::cin, s);
         return s;
     }
+
+    void paint(int xs, int ys, int xe, int ye, text::TextColorB bg)
+    {
+        for (int y = ys; y <= ye; y++)
+        {
+            cursor(xs, y);
+            printf("\033[%sm", text::createColorString(bg).c_str());
+
+            for (int i = 0; i <= xe - xs; i++)
+            {
+                printf(" ");
+                fflush(stdout);
+            }
+
+            printf("\033[39;49m");
+        }
+    }
 }
 
 namespace tui::text
 {
+
+    // std::string createColorString(TextColorF fg, TextColorB bg, TextDecoration td) {
+    //     std::stringstream ss;
+    //     ss << "\033[";
+    // }
+
+
+
 
     std::string createReset() { return "\033[0;0m"; }
     std::string createColorString(int colorCode) { return std::to_string(colorCode); }
@@ -141,14 +196,12 @@ namespace tui::text
     {
 
         std::stringstream ss;
-        ss << "\033[";
+        ss << "\033[0;";
 
         bool hasTD = Style.decoration != TextDecoration::None;
         bool hasFG = Style.fgColor != TextColorF::None;
         bool hasBG = Style.bgColor != TextColorB::None;
 
-        if ((Style.decoration & TextDecoration::Bold) == TextDecoration::None)
-            ss << "0;";
         if ((Style.decoration & TextDecoration::Bold) == TextDecoration::Bold)
             ss << "1;";
         if ((Style.decoration & TextDecoration::Italic) == TextDecoration::Italic)
@@ -167,14 +220,7 @@ namespace tui::text
         ss << "m";
 
         std::string start = ss.str();
-        std::string end = "\033["; //Reset to normal if changed
-        if (hasTD)
-            end += "0";
-        if (hasFG)
-            end += "39";
-        if (hasBG)
-            end += "49";
-        end += "m";
+        std::string end = "\033[0m";
 
         assign(start + this->Content + end);
     }

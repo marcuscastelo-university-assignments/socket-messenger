@@ -29,7 +29,8 @@ namespace tui::text
         Blue,
         Magenta,
         Cyan,
-        White
+        White,
+        Reset = 39
     };
 
     //Enum utilizado para highlight do background
@@ -43,7 +44,8 @@ namespace tui::text
         Blue,
         Magenta,
         Cyan,
-        White
+        White,
+        Reset = 49
     };
 
     //Enum utilizado para decorar texto (formatação)
@@ -197,6 +199,10 @@ namespace tui
 
     void clear();
 
+    void color(text::TextColorF);
+    void color(text::TextColorB);
+    void creset();
+
     void print(const text::Text &text);
     void printl(const text::Text &text = "");
 
@@ -204,6 +210,8 @@ namespace tui
 
     void up(int amount = 1);
     void down(int amount = 1);
+    void ups(int amount = 1);
+    void downs(int amount = 1);
     void left(int amount = 1);
     void right(int amount = 1);
 
@@ -214,9 +222,15 @@ namespace tui
     void savePos();
     void rbPos();
 
+    void saveScreen();
+    void rbScreen();
+
+
     std::pair<int,int> getSize();
 
     std::string readline();
+
+    void paint(int xs, int ys, int xe, int ye, text::TextColorB bg);
 }
 
 namespace tui::widgets {

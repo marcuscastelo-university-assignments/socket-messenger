@@ -13,7 +13,7 @@ CXX_FLAGS := $(WARNING_FLAGS) $(DEBUG_FLAGS) $(LD_FLAGS)
 
 # Binaries and it's dependencies
 RULES := server client test
-SERVER_OBJS := server/server.o common/socket.o common/tui.o
+SERVER_OBJS := server/server.o server/server_tui.o common/socket.o common/tui.o
 CLIENT_OBJS := client/client.o common/socket.o common/tui.o
   TEST_OBJS := test/test.o common/tui.o
 #
