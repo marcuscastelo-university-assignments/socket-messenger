@@ -55,8 +55,8 @@ struct SocketBuffer
 //Estrutura auxiliar que armazena os dados da informação contida no socket
 struct Message
 {
-    std::string Content, FromUser, ToUser;
-    Message(const std::string &fromUser, const std::string &destUser, const std::string &content);
+    std::string FromUser, ToUser, Content;
+    Message(const std::string &fromUser, const std::string &content, const std::string &destUser);
     Message(const std::string &fromUser, const SocketBuffer &buf);
     SocketBuffer ToBuffer();
 };

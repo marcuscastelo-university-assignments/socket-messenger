@@ -5,15 +5,17 @@ all:
 # Compiler alternatives, options and flags
 LD_FLAGS := -pthread -I./src -I./src/common
 DEBUG_FLAGS := -O0 -ggdb
+WARNING_FLAGS := -Wall -Wno-unused-variable
 
 CXX := g++
-CXX_FLAGS := $(DEBUG_FLAGS) $(LD_FLAGS) 
+CXX_FLAGS := $(WARNING_FLAGS) $(DEBUG_FLAGS) $(LD_FLAGS) 
 #
 
 # Binaries and it's dependencies
-RULES := server client
+RULES := server client test
 SERVER_OBJS := server/server.o common/socket.o common/tui.o
 CLIENT_OBJS := client/client.o common/socket.o common/tui.o
+  TEST_OBJS := test/test.o common/tui.o
 #
 
 # Project structure
@@ -33,27 +35,29 @@ BINARIES := $(addprefix $(BIN_DIR)/,$(RULES))
 
 SERVER_OBJS := $(addprefix $(OBJ_DIR)/,$(SERVER_OBJS))
 CLIENT_OBJS := $(addprefix $(OBJ_DIR)/,$(CLIENT_OBJS))
+TEST_OBJS := $(addprefix $(OBJ_DIR)/,$(TEST_OBJS))
 #
 
 # [GLOBAL] Assure subdirectories exist
 $(shell mkdir -p $(SUBDIRS))
 
 # Aliases to bin/server and bin/client
-.PHONY: server client
+.PHONY: server client test
+
 server: .EXTRA_PREREQS = ./bin/server
 client: .EXTRA_PREREQS = ./bin/client
+test: .EXTRA_PREREQS = ./bin/test
 
 ifeq (run, $(filter run,$(MAKECMDGOALS)))
-.PHONY: server client
-server:
-	@./bin/server
-client:
-	@./bin/client
+.PHONY: $(RULES)
+$(RULES):
+	@./bin/$@
 endif
 
 # Inform which objects are used by each binary
 ./bin/server: $(SERVER_OBJS)
 ./bin/client: $(CLIENT_OBJS)
+./bin/test: $(TEST_OBJS)
 
 # Create binary out of objects
 $(BINARIES):

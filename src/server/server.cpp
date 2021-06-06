@@ -22,6 +22,7 @@ using namespace std::chrono_literals;
 
 #include "socket.hpp"
 
+#include "server.hpp"
 
 /**
     * Função responsável por reenviar a mensagem recebida do cliente para o cliente alvo
@@ -157,7 +158,7 @@ bool waitForIdentification(ServerInfo& server, const Socket &clientSocket)
     //TODO: function for this ugly logic
     char *command = recBuf.buf;
     char *nick = recBuf.buf;
-    for (int i = 0; i < recBuf.len; i++)
+    for (size_t i = 0; i < recBuf.len; i++)
     {
         if (recBuf.buf[i] == '=')
         {

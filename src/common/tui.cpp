@@ -7,6 +7,11 @@ namespace tui
 {
     void print(const text::Text &text)
     {
+        for (int i = 0; i < currentTabbing; i++)
+        {
+            std::cout << "  ";
+        }
+        
         std::cout << text;
     }
 
@@ -20,6 +25,39 @@ namespace tui
     {
         printf("\033[H\033[J");
     }
+
+
+    void cursor(int x, int y) {
+        printf("\033[%d;%df", x, y);
+    }
+    void up(int amount) {
+        printf("\033[%dA", std::max(1, amount));
+    }
+    void down(int amount) {
+        printf("\033[%dB", std::max(1, amount));
+    }
+    void left(int amount) {
+        printf("\033[%dD", std::max(1, amount));
+    }
+    void right(int amount) {
+        printf("\033[%dC", std::max(1, amount));
+    }
+    void delLineR() {
+        printf("\033[0K");
+    }
+    void delLineL() {
+        printf("\033[1K");
+    }
+    void delLine() {
+        printf("\033[2K");
+    }
+    void savePos() {
+        printf("\033[s");
+    }
+    void rbPos() {
+        printf("\033[ou");
+    }
+
 
     std::string readline()
     {
@@ -36,6 +74,8 @@ namespace tui::text
     std::string createColorString(int colorCode) { return std::to_string(colorCode); }
     std::string createColorString(TextColorF fc) { return createColorString((int)fc); }
     std::string createColorString(TextColorB fb) { return createColorString((int)fb); }
+
+
 
     Text::Text(const std::string &content) : std::string(content)
     {
@@ -194,6 +234,9 @@ namespace tui::text
     // {
     //     return Text{this->Content + other.Content};
     // }
+
+
+
 
 }
 

@@ -158,7 +158,6 @@ namespace tui::text
         //Função que aplica o estilo da classe ao texto
         void ApplyStyle();
     };
-
 }
 
 //Operator para cada texto, que retorna um texto formatado e estilizado
@@ -190,8 +189,41 @@ namespace tui::text_literals
 
 namespace tui
 {
+    static int currentTabbing = 0;
+
+    inline void tab(int amount = 1) { currentTabbing+=amount; }
+    inline void untab(int amount = 1) { currentTabbing = std::max(0,currentTabbing-amount); }
+
+    void clear();
+
     void print(const text::Text &text);
     void printl(const text::Text &text = "");
-    void clear();
+
+    void cursor(int x, int y);
+
+    void up(int amount = 1);
+    void down(int amount = 1);
+    void left(int amount = 1);
+    void right(int amount = 1);
+
+    void delLineR();
+    void delLineL();
+    void delLine();
+
+    void savePos();
+    void rbPos();
+
     std::string readline();
+}
+
+namespace tui::widgets {
+
+    class Widget {
+        int x, y;
+    };
+
+    class Label : public Widget {
+
+    };
+
 }

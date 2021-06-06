@@ -141,11 +141,6 @@ SocketBuffer Socket::Read(const Socket &clientSocket, int bufferMaxSize)
         throw ConnectionClosedException();
     }
 
-    if (readCount == -1)
-    {
-        throw std::runtime_error("Unexpect error, readCount == -1");
-    }
-
     readBuf[readCount] = '\0';
 
     return (SocketBuffer){
@@ -174,14 +169,14 @@ bool Socket::operator==(const Socket &other) const {
     return m_Type == other.m_Type && m_SocketFD == other.m_SocketFD && m_Address.ip == other.m_Address.ip && m_Address.port == other.m_Address.port;
 }
 
-Message::Message(const std::string &fromUser, const std::string &content, const std::string &destUser)
-    : FromUser(fromUser), Content(content), ToUser(destUser) {}
+Message::Message(const std::string &fromUser, const std::string &destUser, const std::string &content)
+    : FromUser(fromUser), ToUser(destUser), Content(content)  {}
 
 Message::Message(const std::string &fromUser, const SocketBuffer &sd)
 {
     char *buf = strdup(sd.buf);
 
-    int i = 0;
+    size_t i = 0;
     char *commandPart= buf; 
     
     char *parts[3] = {buf, buf, buf};
