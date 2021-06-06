@@ -45,6 +45,27 @@
             ],
             "preLaunchTask": "Make client",
             "miDebuggerPath": "/usr/bin/gdb"
+        },
+        {
+            "name": "Compile and Run (Test)",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/bin/test",
+            "args": [],
+            "stopAtEntry": false,
+            "cwd": "${workspaceFolder}",
+            "environment": [],
+            "externalConsole": false,
+            "MIMode": "gdb",
+            "setupCommands": [
+                {
+                    "description": "Enable pretty-printing for gdb",
+                    "text": "-enable-pretty-printing",
+                    "ignoreFailures": true
+                }
+            ],
+            "preLaunchTask": "Make test",
+            "miDebuggerPath": "/usr/bin/gdb"
         }
     ]
 }

@@ -14,6 +14,7 @@
 #include <stdio.h>
 #include <iostream>
 #include <string>
+#include <sys/ioctl.h>
 
 namespace tui::text
 {
@@ -212,6 +213,8 @@ namespace tui
 
     void savePos();
     void rbPos();
+
+    std::pair<int,int> getSize();
 
     std::string readline();
 }

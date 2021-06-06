@@ -21,10 +21,10 @@
         },
         {
             "type": "cppbuild",
-            "label": "Make client",
+            "label": "Make test",
             "command": "make",
             "args": [
-                "client"
+                "test"
             ],
             "options": {
                 "cwd": "${workspaceFolder}"

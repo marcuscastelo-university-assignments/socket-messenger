@@ -11,7 +11,7 @@ namespace tui
         {
             std::cout << "  ";
         }
-        
+
         std::cout << text;
     }
 
@@ -26,38 +26,53 @@ namespace tui
         printf("\033[H\033[J");
     }
 
-
-    void cursor(int x, int y) {
-        printf("\033[%d;%df", x, y);
+    void cursor(int x, int y)
+    {
+        printf("\033[%d;%df", y, x);
     }
-    void up(int amount) {
+    void up(int amount)
+    {
         printf("\033[%dA", std::max(1, amount));
     }
-    void down(int amount) {
+    void down(int amount)
+    {
         printf("\033[%dB", std::max(1, amount));
     }
-    void left(int amount) {
+    void left(int amount)
+    {
         printf("\033[%dD", std::max(1, amount));
     }
-    void right(int amount) {
+    void right(int amount)
+    {
         printf("\033[%dC", std::max(1, amount));
     }
-    void delLineR() {
+    void delLineR()
+    {
         printf("\033[0K");
     }
-    void delLineL() {
+    void delLineL()
+    {
         printf("\033[1K");
     }
-    void delLine() {
+    void delLine()
+    {
         printf("\033[2K");
     }
-    void savePos() {
+    void savePos()
+    {
         printf("\033[s");
     }
-    void rbPos() {
+    void rbPos()
+    {
         printf("\033[ou");
     }
 
+    std::pair<int, int> getSize()
+    {
+        winsize size;
+        ioctl(1, TIOCGWINSZ, &size);
+        return { size.ws_col, size.ws_row };
+    }
 
     std::string readline()
     {
@@ -74,8 +89,6 @@ namespace tui::text
     std::string createColorString(int colorCode) { return std::to_string(colorCode); }
     std::string createColorString(TextColorF fc) { return createColorString((int)fc); }
     std::string createColorString(TextColorB fb) { return createColorString((int)fb); }
-
-
 
     Text::Text(const std::string &content) : std::string(content)
     {
@@ -234,9 +247,6 @@ namespace tui::text
     // {
     //     return Text{this->Content + other.Content};
     // }
-
-
-
 
 }
 
