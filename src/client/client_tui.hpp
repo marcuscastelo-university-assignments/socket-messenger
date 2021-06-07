@@ -2,6 +2,7 @@
 
 #include "client.hpp"
 #include "tui.hpp"
+#include <termios.h>
 
 using namespace tui::text;
 using namespace tui::text_literals;
@@ -53,15 +54,21 @@ namespace tui
                 cursor(0, headerStartY + headerLenY + 1);
                 tui::print(tui::text::Text{"> "_fgre});
                 std::string command = tui::readline();
-                if (command == "exit")
+                if (command == "exit") {
+                    delLineR();
+                    printl("Exiting..."_fblu);
                     m_Client.RequestExit();
+                }
                 if (command == "chat")
                 {
                     cursor(0, headerStartY + headerLenY + 1);
+                    delLineR();
                     print("Digite o destinatário da mensagem: ");
                     auto toUser = tui::readline();
 
+                    delLineR();
                     printl("Pressione enter para enviar a mensagem"_fblu);
+                    delLineR();
                     print(Text{toUser}.FYellow().Bold() + " >>> "_fcya);
                     std::string content = tui::readline();
 
@@ -75,9 +82,22 @@ namespace tui
             tui::rbScreen();
         }
 
-        void RequestExit() {
+        void RequestExit()
+        {
             m_Running = false;
             //TODO: close stdin?
+        }
+
+        void Notify(const std::string &serverNotification)
+        {
+            tui::pauseReadline();
+            tui::savePos();
+            tui::downs(2);
+            tui::print(serverNotification);
+            tui::ups(2);
+            tui::rbPos();
+            tui::unpauseReadline();
+            fflush(stdout);
         }
     };
 }
