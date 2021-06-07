@@ -18,35 +18,17 @@
 using namespace std::chrono_literals;
 
 #include "socket.hpp"
+#include "client_tui.hpp"
 #include "tui.hpp"
 using namespace tui::text_literals;
 
 Socket serverSocket(SocketType::TCP);
 
 bool isTuiRunning = false;
+
 void startTUI()
 {
     isTuiRunning = true;
-
-    tui::clear();
-    tui::printl("Bem vindo ao Zaplan"_fgre);
-    tui::printl();
-    tui::print("Digite seu " + "nick"_fwhi + ": ");
-    tui::text::Text nick = tui::readline();
-
-    tui::printl("Bem vindo, "_fred + nick.Bold());
-
-    try
-    {
-        std::string bufContet = "nick=" + nick.Content;
-        Socket::Send(serverSocket, SocketBuffer{ bufContet.c_str(), bufContet.length()+1 });
-    }
-    catch (ConnectionFailedException &e)
-    {
-        std::cerr << "Unable to send username to server" << ".\nReason:\n\t ";
-        std::cerr << e.what() << std::endl;
-        throw e;
-    }
 
     int enviados;
     char mensagem[1024];
@@ -107,17 +89,18 @@ void handleSocketDestruction(int sig)
 
 int main(int argc, char const *argv[])
 {
+    tui::clear();
+    tui::printl("Inicializando Zaplan v0.1 - Cliente"_fgre);
 
-    signal(SIGKILL, handleSocketDestruction);
-    signal(SIGTERM, handleSocketDestruction);
-    signal(SIGINT, handleSocketDestruction);
-    signal(SIGQUIT, handleSocketDestruction);
-    signal(SIGTSTP, handleSocketDestruction);
-    signal(SIGSEGV, handleSocketDestruction);
+    const std::string defaultServerIP("127.0.0.1");
+    const std::string *serverIp = &defaultServerIP;
+    tui::print("Digite o IP do servidor com o qual deseja se conectar (Enter para localhost): ");
+    std::string input = tui::readline();
+    if (!input.empty())
+        serverIp = &input;
 
-    std::cout << "Criando um cliente!!" << std::endl;
-
-    IPADDR4 serverAddress{"127.0.0.1", 4545};
+    IPADDR4 serverAddress{*serverIp, 4545};
+    Socket serverSocket(SocketType::TCP);
 
     try
     {
@@ -125,19 +108,39 @@ int main(int argc, char const *argv[])
     }
     catch (ConnectionFailedException &e)
     {
-        std::cerr << "Unable to connect to " << serverAddress.ToString() << ". \nReason:\n\t ";
+        tui::print(tui::text::Text("Unable to connect to " + serverAddress.ToString() + ". \nReason:\t ").FRed());
         std::cerr << e.what() << std::endl;
         return -1;
     }
 
-    std::this_thread::sleep_for(1s);
+    tui::print("Digite seu " + "nick"_fwhi + ": ");
+    std::string nick = tui::readline();
+
+    try
+    {
+        std::string bufContet = "nick=" + nick;
+        Socket::Send(serverSocket, SocketBuffer{bufContet.c_str(), bufContet.length() + 1});
+    }
+    catch (ConnectionFailedException &e)
+    {
+        std::cerr << "Unable to send username to server"
+                  << ".\nReason:\n\t ";
+        std::cerr << e.what() << std::endl;
+        throw e;
+    }
+
+    Client client(serverSocket, nick);
 
     std::thread receiveServerMessages(receiveMessages);
-    startTUI();
+    auto clientTUI = tui::ClientTUI(client);
+    clientTUI.Enter();
+
+    tui::printl("Encerrando Zaplan v0.1 - Cliente"_fyel);
 
     close(serverSocket.GetFD());
     receiveServerMessages.join();
 
+    tui::printl("Todas as threads foram encerradas com sucesso"_fyel);
     return 0;
 }
 

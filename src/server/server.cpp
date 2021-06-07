@@ -212,8 +212,9 @@ void acceptClients(ServerInfo *server_p)
     }
 }
 
-void startServer(ServerInfo &server, bool waitThreads = true)
+void startServer(ServerInfo *server_p, bool waitThreads = true)
 {
+    ServerInfo &server = *server_p;
     server.running = true;
     try
     {
@@ -257,15 +258,18 @@ int main(int argc, char const *argv[])
 
     tui::printl("Inicializando o Zaplan Server..."_fgre);
     tui::down(2);
-    // startServer(server, true);
 
+    std::thread serverThread(startServer, &server, true);
+    server.serverThread = &serverThread;
+    
     tui::ServerTUI serverTui(server);
     
-    std::this_thread::sleep_for(500ms);
+    tui::printl("Mudando para o modo interativo - Terminal User Interface (TUI)"_fgre);
+    std::this_thread::sleep_for(900ms);
     serverTui.Enter();
 
-    tui::printl("Fechando o servidor..."_fyel);
-    endServer(server);
+    // endServer(server);
 
+    tui::printl("Todas as threads foram encerradas com sucesso!"_fblu);
     return 0;
 }

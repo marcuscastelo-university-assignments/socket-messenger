@@ -169,8 +169,8 @@ bool Socket::operator==(const Socket &other) const {
     return m_Type == other.m_Type && m_SocketFD == other.m_SocketFD && m_Address.ip == other.m_Address.ip && m_Address.port == other.m_Address.port;
 }
 
-Message::Message(const std::string &fromUser, const std::string &destUser, const std::string &content)
-    : FromUser(fromUser), ToUser(destUser), Content(content)  {}
+Message::Message(const std::string &fromUser, const std::string &toUser, const std::string &content)
+    : FromUser(fromUser), ToUser(toUser), Content(content)  {}
 
 Message::Message(const std::string &fromUser, const SocketBuffer &sd)
 {

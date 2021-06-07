@@ -5,19 +5,25 @@
 
 namespace tui
 {
-    void print(const text::Text &text)
+    void print(const text::Text &text, text::TextColorF fg)
     {
+        if (fg != text::TextColorF::None)
+            printf("\033[%sm", text::createColorString(fg).c_str());
+
         for (int i = 0; i < currentTabbing; i++)
         {
             std::cout << "  ";
         }
 
         std::cout << text;
+
+        if (fg != text::TextColorF::None)
+            printf("\033[0m");
     }
 
-    void printl(const text::Text &text)
+    void printl(const text::Text &text, text::TextColorF fg)
     {
-        print(text);
+        print(text, fg);
         std::cout << std::endl;
     }
 
@@ -194,7 +200,6 @@ namespace tui::text
 
     void Text::ApplyStyle()
     {
-
         std::stringstream ss;
         ss << "\033[0;";
 

@@ -56,7 +56,7 @@ struct SocketBuffer
 struct Message
 {
     std::string FromUser, ToUser, Content;
-    Message(const std::string &fromUser, const std::string &content, const std::string &destUser);
+    Message(const std::string &fromUser, const std::string &toUser, const std::string &content);
     Message(const std::string &fromUser, const SocketBuffer &buf);
     SocketBuffer ToBuffer();
 };
@@ -104,6 +104,9 @@ public:
 
     //Construtor da classe Socket, que retorna um socket do tipo passado como argumento
     Socket(SocketType type);
+
+    //Construtor do tipo copy-constructor, permite clonar um Socket (só clona o objeto, o FD (File Descriptor) é o mesmo)
+    Socket(const Socket& other) = default;
 
     //Construtor da classe Socket, que retorna um socket com o valor passado
     Socket(int socketFD, SocketType type, IPADDR4 address);

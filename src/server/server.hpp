@@ -15,6 +15,7 @@ struct ServerInfo
     bool running = false;
 
     std::vector<std::thread *> threadsVector = {};
+    std::thread *serverThread;
 
     std::vector<Message> pendingMessages = {};
 

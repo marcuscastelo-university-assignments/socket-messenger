@@ -203,8 +203,8 @@ namespace tui
     void color(text::TextColorB);
     void creset();
 
-    void print(const text::Text &text);
-    void printl(const text::Text &text = "");
+    void print(const text::Text &text, text::TextColorF fg = text::TextColorF::None);
+    void printl(const text::Text &text = "", text::TextColorF fg = text::TextColorF::None);
 
     void cursor(int x, int y);
 
