@@ -166,6 +166,27 @@ void printClientStats(Socket clientSocket)
 }
 
 /**
+ * Função auxiliar que faz o parse para identificar o nome do cliente
+ * 
+ * Parâmetros:	SocketBuffer *recBuf	=>	Socket que recebe o buffer
+ * 				char *command			=>	Comando recebido da mensagem
+ * 				char *nick				=>	Nickname do cliente
+ * 
+ * Return: void
+*/
+void parseClientName(SocketBuffer *recBuf, char *command, char *nick){
+	for (size_t i = 0; i < recBuf->len; i++)
+    {
+        if (recBuf->buf[i] == '=')
+        {
+            recBuf->buf[i] = '\0';
+            nick = recBuf->buf + i + 1;
+            return;
+        }
+    }
+}
+
+/**
  * Função auxiliar que da a confirmação da conexão de um cliente
  * ao servidor e o adiciona no mapeamento
  * 
@@ -179,18 +200,11 @@ bool waitForIdentification(ServerInfo& server, const Socket &clientSocket)
 {
     SocketBuffer recBuf = clientSocket.Read();
 
-    //TODO: function for this ugly logic
     char *command = recBuf.buf;
     char *nick = recBuf.buf;
-    for (size_t i = 0; i < recBuf.len; i++)
-    {
-        if (recBuf.buf[i] == '=')
-        {
-            recBuf.buf[i] = '\0';
-            nick = recBuf.buf + i + 1;
-            break;
-        }
-    }
+    
+	parseClientName(&recBuf, command, nick);
+
     std::string strCommand(command);
     std::string strNick(nick);
 
