@@ -1,3 +1,6 @@
+/**
+ * Header responsável por gerenciar as tarefas do servidor
+ */
 #pragma once
 #include "socket.hpp"
 
@@ -8,6 +11,14 @@
 //Estrutura auxiliar que armazena informações essenciais para o server
 struct ServerInfo
 {
+	/**
+	 * O servidor armazena o seu IP e portas, Socket e
+	 * a quantidade de clientes conectados a ele
+	 * 
+	 * Todas as threads ficam armazenadas em um vector,
+	 * bem como as mensagens a serem enviadas
+	 **/
+
     Socket socket;
     IPADDR4 address;
 
@@ -19,6 +30,12 @@ struct ServerInfo
 
     std::vector<Message> pendingMessages = {};
 
+	/**
+	 * Estrutura criada para facilitar gerenciamento dos clientes
+	 * conectados em tempo de execução. Nela são contidas dois mapas
+	 * não ordenados que armazenam os clientes e seus sockets respectivos,
+	 * facilitando a organização e o fluxo de dados
+	 * */
     struct
     {
         std::unordered_map<std::string, Socket> clientSockets = {};

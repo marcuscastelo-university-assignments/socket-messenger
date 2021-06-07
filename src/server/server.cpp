@@ -139,6 +139,13 @@ ServerInfo createServer(IPADDR4 address = {"0.0.0.0", 4545})
     return server;
 }
 
+/**
+ * Função que faz o join das threads no servidor
+ * 
+ * Parâmetros: const ServerInfo &server	=>	Referência para o servidor em questão
+ * 
+ * Retorno: void
+*/
 void joinServerThreads(const ServerInfo &server)
 {
     for (size_t i = 0; i < server.threadsVector.size(); i++)
@@ -147,6 +154,13 @@ void joinServerThreads(const ServerInfo &server)
     }
 }
 
+/**
+ * Função que printa quando um cliente se conectou e qual seu ip:porta
+ * 
+ * Parâmetros: Socket clientSocket	=>	Socket do cliente conectado
+ * 
+ * Retorno: void
+*/
 void printClientStats(Socket clientSocket)
 {
     std::cout << "Um cliente se conectou! IP = [";
@@ -154,6 +168,16 @@ void printClientStats(Socket clientSocket)
     std::cout << "]" << std::endl;
 }
 
+/**
+ * Função auxiliar que da a confirmação da conexão de um cliente
+ * ao servidor e o adiciona no mapeamento
+ * 
+ * Parâmetros: ServerInfo& server			=>	Servidor em questão
+ * 			   const Socket &clientSocket	=>	Socket do novo cliente
+ * 
+ * Return: bool	=>	Caso a adição seja validada - true
+ * 					Se não, false
+*/
 bool waitForIdentification(ServerInfo& server, const Socket &clientSocket)
 {
     SocketBuffer recBuf = clientSocket.Read();
@@ -186,6 +210,14 @@ bool waitForIdentification(ServerInfo& server, const Socket &clientSocket)
     return true;
 }
 
+/**
+ * Função que permite que o servidor aceite a entrada de clientes
+ * e armazena sua thread no vector
+ * 
+ * Parâmetros: ServerInfor *server_p	=>	Servidor em questão
+ * 
+ * Return: void
+*/
 void acceptClients(ServerInfo *server_p)
 {
     ServerInfo &server = *server_p;
@@ -212,6 +244,15 @@ void acceptClients(ServerInfo *server_p)
     }
 }
 
+/**
+ * Função responsável por iniciar o servidor, executando o bind
+ * e inicializando as threads necessárias
+ * 
+ * Parâmetros: 	ServerInfo *server_p	=>	Servidor em questão
+ * 				bool waitThreads = true	=>	Bool que marca a espera por threads (clientes)
+ * 
+ * Retorno: void
+*/
 void startServer(ServerInfo *server_p, bool waitThreads = true)
 {
     ServerInfo &server = *server_p;
@@ -238,6 +279,14 @@ void startServer(ServerInfo *server_p, bool waitThreads = true)
         joinServerThreads(server);
 }
 
+/**
+ * Função que encerra o server, fechando os sockets e
+ * finalizando as suas threads
+ * 
+ * Parâmetros:	ServerInfor &server	=>	Servidor a ser fechado
+ * 
+ * Retorno: void
+*/
 void endServer(ServerInfo &server)
 {
     server.running = false;
@@ -251,6 +300,15 @@ void endServer(ServerInfo &server)
     server.threadsVector.clear();
 }
 
+/**
+ * Função main do servidor, que faz a chamada na ordem correta
+ * dos métodos:
+ * 				- Cria o servidor
+ * 				- Iniciliza o servidor
+ * 				- Executa a tui
+ * 				- Gerencia todas as funções
+ * 				- Encerra o servidor
+*/
 int main(int argc, char const *argv[])
 {
     tui::clear();
