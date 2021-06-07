@@ -7,10 +7,10 @@ namespace tui
 
     class ServerTUI
     {
-        ServerInfo &m_Server;
+        Server &m_Server;
 
     public:
-        ServerTUI(ServerInfo &server) : m_Server(server) {}
+        ServerTUI(Server &server) : m_Server(server) {}
 
         void Enter();
     };

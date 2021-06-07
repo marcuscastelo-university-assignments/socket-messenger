@@ -20,7 +20,7 @@ namespace tui
 
         cursor(4, headerStartY + 1);
         std::cout << "Status: "_bbla
-                  << (m_Server.running ? "Online"_fgre : "Offline"_fred).BBlack().Bold();
+                  << (m_Server.IsRunning() ? "Online"_fgre : "Offline"_fred).BBlack().Bold();
 
         cursor(4, headerStartY + 3);
         std::cout << "Usuários conectados ("_fwhi.BBlack() << "3"_fyel.BBlack() << "): "_fwhi.BBlack();

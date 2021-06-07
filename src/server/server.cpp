@@ -26,132 +26,7 @@ using namespace std::chrono_literals;
 
 #include "server_tui.hpp"
 
-
-/**
-    * Função responsável por reenviar a mensagem recebida do cliente para o cliente alvo
-    *
-    * Parâmetros: ServerInfo &server => possui as mensagens a serem reenviadas
-    *
-    * Retorno: void
-*/
-void resendmessage(ServerInfo &server)
-{
-    std::vector<Message> &messages = server.pendingMessages;
-    while (server.running)
-    {
-        //TODO: mutex para messages
-        //itera todas as mensagens pendentes atualmente no servidor
-        for (size_t i = 0; i < messages.size(); i++)
-        {
-            Message &message = messages[i];
-
-            const std::string &destUser = message.ToUser;
-            auto destSocket = server.biMapClientSocket.clientSockets.find(destUser);
-
-            if (destSocket == server.biMapClientSocket.clientSockets.end())
-            {
-                message.Content = "User " + message.ToUser + " not found (or offline)";
-                message.ToUser = message.FromUser;
-                message.FromUser = "System";
-                destSocket = server.biMapClientSocket.clientSockets.find(message.ToUser);
-                if (destSocket == server.biMapClientSocket.clientSockets.end())
-                    continue;
-            }
-
-            std::cout << "Enviando mensagem: " << message.Content << " para " << message.ToUser << std::endl;
-            try
-            {
-                destSocket->second.Send(message.ToBuffer());
-            }
-            catch (ConnectionClosedException &e)
-            {
-                std::cout << "Server message resent socket has closed" << std::endl;
-                std::cout << "Reason: \t" << e.what() << std::endl;
-                return;
-            }
-            catch (std::exception &e)
-            {
-                std::cout << "Unexpected exception: \t" << e.what() << std::endl;
-                return;
-            }
-        }
-
-        messages.clear();
-        std::this_thread::sleep_for(1s);
-    }
-}
-
-/**
-    * Função responsável por receber e armazenar informações mandadas pelo cliente 
-    *
-    * Parâmetros: ServerInfo &server => armazena informações recebidas
-    *             Socket clientSocket  => possui as informações a serem armazenadas
-    *
-    * Retorno: void
- */
-void listenMessages(ServerInfo &server, Socket clientSocket)
-{
-    Socket &serverSocket = server.socket;
-
-    std::cout << "Escutando mensagens de "
-              << clientSocket.GetAddress() << std::endl;
-    while (server.running)
-    {
-        try
-        {
-            auto it = server.biMapClientSocket.socketClients.find(clientSocket);
-            if (it == server.biMapClientSocket.socketClients.end())
-                continue;
-
-            SocketBuffer recBuf = clientSocket.Read();
-            Message message(it->second, recBuf);
-            printf("Recebido dados: %s\n", recBuf.buf);
-            printf("Convertido de volta dados: %s\n", message.ToBuffer().buf);
-            //TODO: change clientSocket for real destination
-            server.pendingMessages.push_back(message);
-        }
-        catch (ConnectionClosedException &e)
-        {
-            std::cout << "Server message receiving socket has closed" << std::endl;
-            std::cout << "Reason: \t" << e.what() << std::endl;
-            return;
-        }
-    }
-}
-
-/**
-     * Função responsável por criar o server
-     *
-     * Parâmetros: IPADDR4 address = {"0.0.0.0", 4545} => valores de porta 
-     *             
-     *
-     * Retorno: ServerInfo => o server criado
-    */
-ServerInfo createServer(IPADDR4 address = {"0.0.0.0", 4545})
-{
-    Socket serverSocket(SocketType::TCP);
-
-    ServerInfo server(serverSocket, address, 10); //maxClients = 10
-
-    return server;
-}
-
-void joinServerThreads(const ServerInfo &server)
-{
-    for (size_t i = 0; i < server.threadsVector.size(); i++)
-    {
-        server.threadsVector[i]->join();
-    }
-}
-
-void printClientStats(Socket clientSocket)
-{
-    std::cout << "Um cliente se conectou! IP = [";
-    std::cout << clientSocket.GetAddress();
-    std::cout << "]" << std::endl;
-}
-
-bool waitForIdentification(ServerInfo& server, const Socket &clientSocket)
+bool Server::LoginUser(const Socket &clientSocket)
 {
     SocketBuffer recBuf = clientSocket.Read();
 
@@ -178,93 +53,193 @@ bool waitForIdentification(ServerInfo& server, const Socket &clientSocket)
     if (nick == recBuf.buf)
         return false;
 
-    server.biMapClientSocket.insert(strNick, clientSocket);
+    if (m_UserSockets.IsUserRegistered(nick)) {
+        //TODO: rejeitar usuários se o nick ja existir
+    }
+
+    m_UserSockets.RegisterUser(strNick, clientSocket);
 
     return true;
 }
 
-void acceptClients(ServerInfo &server)
+/**
+    * Função responsável por receber e armazenar informações mandadas pelo cliente 
+    *
+    * Parâmetros: Server &server => armazena informações recebidas
+    *             Socket clientSocket  => possui as informações a serem armazenadas
+    *
+    * Retorno: void
+ */
+void Server::AcceptLoop()
 {
     std::cout << "Aceitando clientes!" << std::endl;
-    while (server.running)
+    while (m_Running)
     {
-        Socket clientSocket = server.socket.Accept();
+        Socket clientSocket = m_Socket.Accept();
+        m_ConnectedSockets.push_back(clientSocket);
 
-        //TODO: tirar
-        printf("\a\n");
+        NotifyTUI("Nova conexão: " + clientSocket.GetAddress().ToString());
 
-        while (!waitForIdentification(server, clientSocket))
+        //TODO: thread separada para evitar DoS com hanging auth
+        while (!LoginUser(clientSocket))
         {
             static const char *errorMessage = "INVALID_NICK\0";
             static const size_t errorMessageLen = strlen(errorMessage) + 1;
-            clientSocket.Send(SocketBuffer{errorMessage, errorMessageLen}); 
+            clientSocket.Send(SocketBuffer{errorMessage, errorMessageLen});
             std::this_thread::sleep_for(1s);
         }
 
-        printClientStats(clientSocket);
+        auto& nickname = m_UserSockets.GetUserNick(clientSocket);
 
-        std::thread *serverListenThread = new std::thread(listenMessages, std::ref(server), clientSocket);
-        server.threadsVector.push_back(serverListenThread);
+        NotifyTUI("Conexão autenticada com sucesso, " + clientSocket.GetAddress().ToString() + " agora é identificado como " + nickname);
+
+        std::thread *serverListenThread = new std::thread(std::bind(&Server::ClientLoop, this, std::ref(clientSocket)));
+        m_Threads.push_back(serverListenThread);
     }
 }
 
-void startServer(ServerInfo &server, bool joinThreads = true)
+void Server::ClientLoop(Socket &clientSocket)
 {
-    server.running = true;
-    try
+    Socket &serverSocket = m_Socket;
+
+    std::cout << "Escutando mensagens de "
+              << clientSocket.GetAddress() << std::endl;
+    while (m_Running)
     {
-        server.socket.Bind(server.address);
+        try
+        {
+            if (!m_UserSockets.IsUserRegistered(clientSocket)) {
+                continue;
+            } 
+
+            auto& nickname = m_UserSockets.GetUserNick(clientSocket);
+
+            SocketBuffer recBuf = clientSocket.Read();
+            Message message(nickname, recBuf);
+            NotifyTUI(std::string("Mensagem recebida (nickname = " + nickname +"): from=") + message.FromUser + ", to=" + message.ToUser + ", content = \"" + message.Content + "\"");
+
+            //TODO: change clientSocket for real destination
+            m_MessagesToSend.push_back(message);
+        }
+        catch (ConnectionClosedException &e)
+        {
+            std::cout << "Server message receiving socket has closed" << std::endl;
+            std::cout << "Reason: \t" << e.what() << std::endl;
+            return;
+        }
     }
-    catch (SocketBindException &e)
-    {
-        std::cerr << e.what() << std::endl;
-        exit(-1);
-    }
-
-    std::thread *serverResendMessagesThread = new std::thread(resendmessage, std::ref(server));
-    server.threadsVector.push_back(serverResendMessagesThread);
-
-    server.socket.Listen(server.maxClients);
-
-    std::thread *acceptClientThread = new std::thread(acceptClients, std::ref(server));
-    server.threadsVector.push_back(acceptClientThread);
-
-    if (joinThreads)
-        joinServerThreads(server);
 }
 
-void endServer(ServerInfo &server)
+void Server::CloseAllSockets()
 {
-    server.running = false;
-
-    for (size_t i = 0; i < server.threadsVector.size(); i++)
-        delete (server.threadsVector[i]);
-
-    shutdown(server.socket.GetFD(), 2);
-    close(server.socket.GetFD());
-
-    server.threadsVector.clear();
+    for (auto &socket : m_ConnectedSockets)
+        socket.Close();
+    m_Socket.Close();
 }
 
-int main(int argc, char const *argv[])
+void Server::Start()
 {
-    tui::clear();
-    ServerInfo server = createServer();
+    m_Running = true;
 
-    tui::printl("Inicializando o Zaplan Server..."_fgre);
-    tui::down(2);
+    if (m_AcceptThread != nullptr)
+        throw std::logic_error("Starting server slave twice!");
 
-    std::thread serverThread(startServer, std::ref(server), true);
-    server.serverThread = &serverThread;
+    m_Socket.Listen(m_MaxClients);
+
+    m_AcceptThread = new std::thread(std::bind(&Server::AcceptLoop, this));
     
-    tui::ServerTUI serverTui(server);
-    
+    std::thread *forwardMessageThread = new std::thread(std::bind(&Server::ForwardMessageLoop, this));
+    m_Threads.push_back(forwardMessageThread);
+
+
+}
+
+void Server::EnterTUI()
+{
+    if (m_CurrentTUI != nullptr)
+        throw std::logic_error("Starting server TUI twice!");
+    m_CurrentTUI = new tui::ServerTUI(*this);
+
     tui::printl("Mudando para o modo interativo - Terminal User Interface (TUI)"_fgre);
     std::this_thread::sleep_for(900ms);
-    serverTui.Enter();
 
-    // endServer(server);
+    m_CurrentTUI->Enter();
+}
 
-    tui::printl("Todas as threads foram encerradas com sucesso!"_fblu);
-    return 0;
+void Server::NotifyTUI(const std::string &notification)
+{
+    tui::savePos();
+    tui::pauseReadline();
+
+    tui::down(2);
+    tui::delLineR();
+    //TODO: notify TUI
+    tui::printl(notification);
+
+    tui::rbPos();
+    tui::unpauseReadline();
+}
+
+void Server::RequestStop()
+{
+}
+void Server::RequestStopSlave()
+{
+}
+void Server::RequestStopTUI()
+{
+}
+/**
+    * Função responsável por reenviar a mensagem recebida do cliente para o cliente alvo
+    *
+    * Parâmetros: Server &server => possui as mensagens a serem reenviadas
+    *
+    * Retorno: void
+*/
+void Server::ForwardMessageLoop()
+{
+    std::vector<Message> &messages = m_MessagesToSend;
+    while (m_Running)
+    {
+        //TODO: mutex para messages
+        //itera todas as mensagens pendentes atualmente no servidor
+        for (size_t i = 0; i < messages.size(); i++)
+        {
+            Message &message = messages[i];
+
+            const std::string &destUser = message.ToUser;
+
+            if (!m_UserSockets.IsUserRegistered(destUser))
+            {
+                message.Content = "User " + message.ToUser + " not found (or offline)";
+                message.ToUser = message.FromUser;
+                message.FromUser = "System";
+                if (!m_UserSockets.IsUserRegistered(message.ToUser)) continue;
+            }
+
+            auto &destSocket = m_UserSockets.GetUserSocket(destUser);
+            NotifyTUI(std::string("Enviando mensagem: ") + message.Content + " para " + message.ToUser);
+
+            //TODO: remove
+            std::this_thread::sleep_for(1s);
+            try
+            {
+                destSocket.Send(message.ToBuffer());
+            }
+            catch (ConnectionClosedException &e)
+            {
+                std::cout << "Server message resent socket has closed" << std::endl;
+                std::cout << "Reason: \t" << e.what() << std::endl;
+                return;
+            }
+            catch (std::exception &e)
+            {
+                std::cout << "Unexpected exception: \t" << e.what() << std::endl;
+                return;
+            }
+        }
+
+        messages.clear();
+        std::this_thread::sleep_for(1s);
+    }
 }
