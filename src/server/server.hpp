@@ -68,5 +68,5 @@ public:
     void RequestStopTUI();
 
     //TODO: delete threads, tui, etc.
-    virtual ~Server() { CloseAllSockets(); }
+    virtual ~Server();
 };

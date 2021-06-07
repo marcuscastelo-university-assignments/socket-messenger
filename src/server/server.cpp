@@ -53,7 +53,8 @@ bool Server::LoginUser(const Socket &clientSocket)
     if (nick == recBuf.buf)
         return false;
 
-    if (m_UserSockets.IsUserRegistered(nick)) {
+    if (m_UserSockets.IsUserRegistered(nick))
+    {
         //TODO: rejeitar usuários se o nick ja existir
     }
 
@@ -89,7 +90,7 @@ void Server::AcceptLoop()
             std::this_thread::sleep_for(1s);
         }
 
-        auto& nickname = m_UserSockets.GetUserNick(clientSocket);
+        auto &nickname = m_UserSockets.GetUserNick(clientSocket);
 
         NotifyTUI("Conexão autenticada com sucesso, " + clientSocket.GetAddress().ToString() + " agora é identificado como " + nickname);
 
@@ -108,15 +109,16 @@ void Server::ClientLoop(Socket &clientSocket)
     {
         try
         {
-            if (!m_UserSockets.IsUserRegistered(clientSocket)) {
+            if (!m_UserSockets.IsUserRegistered(clientSocket))
+            {
                 continue;
-            } 
+            }
 
-            auto& nickname = m_UserSockets.GetUserNick(clientSocket);
+            auto &nickname = m_UserSockets.GetUserNick(clientSocket);
 
             SocketBuffer recBuf = clientSocket.Read();
             Message message(nickname, recBuf);
-            NotifyTUI(std::string("Mensagem recebida (nickname = " + nickname +"): from=") + message.FromUser + ", to=" + message.ToUser + ", content = \"" + message.Content + "\"");
+            NotifyTUI(std::string("Mensagem recebida (nickname = " + nickname + "): from=") + message.FromUser + ", to=" + message.ToUser + ", content = \"" + message.Content + "\"");
 
             //TODO: change clientSocket for real destination
             m_MessagesToSend.push_back(message);
@@ -147,11 +149,9 @@ void Server::Start()
     m_Socket.Listen(m_MaxClients);
 
     m_AcceptThread = new std::thread(std::bind(&Server::AcceptLoop, this));
-    
+
     std::thread *forwardMessageThread = new std::thread(std::bind(&Server::ForwardMessageLoop, this));
     m_Threads.push_back(forwardMessageThread);
-
-
 }
 
 void Server::EnterTUI()
@@ -182,12 +182,21 @@ void Server::NotifyTUI(const std::string &notification)
 
 void Server::RequestStop()
 {
+    RequestStopSlave();
+    RequestStopTUI();
 }
 void Server::RequestStopSlave()
 {
+    m_Running = false;
+    CloseAllSockets();
+    for (auto &thread : m_Threads)
+        thread->join();
+    m_AcceptThread->join();
 }
 void Server::RequestStopTUI()
 {
+    if (m_CurrentTUI != nullptr)
+        m_CurrentTUI->RequestStop();
 }
 /**
     * Função responsável por reenviar a mensagem recebida do cliente para o cliente alvo
@@ -214,7 +223,8 @@ void Server::ForwardMessageLoop()
                 message.Content = "User " + message.ToUser + " not found (or offline)";
                 message.ToUser = message.FromUser;
                 message.FromUser = "System";
-                if (!m_UserSockets.IsUserRegistered(message.ToUser)) continue;
+                if (!m_UserSockets.IsUserRegistered(message.ToUser))
+                    continue;
             }
 
             auto &destSocket = m_UserSockets.GetUserSocket(destUser);
@@ -242,4 +252,15 @@ void Server::ForwardMessageLoop()
         messages.clear();
         std::this_thread::sleep_for(1s);
     }
+}
+
+Server::~Server()
+{
+    CloseAllSockets();
+    m_ConnectedSockets.clear();
+    for (auto& thread : m_Threads) { thread->join(); delete thread; }
+    m_AcceptThread->join();
+    delete m_AcceptThread;
+    m_Threads.clear();
+    m_AcceptThread = nullptr;
 }

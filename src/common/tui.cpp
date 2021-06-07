@@ -154,6 +154,7 @@ namespace tui
                 if (c == 127) {
                     if (___current_input_pos == 0) continue;
                     //TODO: change ss to char[]?
+                    //FIXME: backspace not working in ss
                     ss.seekp(-1, std::ios_base::end);
                     ss << "\0";
                     ss.seekp(-1, std::ios_base::end);
