@@ -210,7 +210,7 @@ Message::Message(const std::string &fromUser, const SocketBuffer &sd)
 }
 
 
-SocketBuffer Message::ToBuffer()
+SocketBuffer Message::ToBuffer() const
 {
     std::stringstream ss;
     ss << "msg=" << FromUser << ":" << ToUser << ":" << Content;

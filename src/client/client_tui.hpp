@@ -12,6 +12,8 @@ namespace tui
     {
         Client &m_Client;
 
+        bool m_Running = false;
+
         void UpdateHeader()
         {
             auto screenSize = tui::getSize();
@@ -20,7 +22,7 @@ namespace tui
 
             cursor(4, headerStartY + 1);
             //TODO: fix color bug
-            std::cout << "Logado como: "_bbla << Text{m_Client.m_Nickname.c_str()}.BBlack().Bold();
+            std::cout << "Logado como: "_bbla << Text{m_Client.GetNickname().c_str()}.BBlack().Bold();
 
             cursor(4, headerStartY + 3);
             std::cout << "Usuários conectados ("_fwhi.BBlack() << "3"_fyel.BBlack() << "): "_fwhi.BBlack();
@@ -37,10 +39,11 @@ namespace tui
 
         void Enter()
         {
+            m_Running = true;
             tui::saveScreen();
             tui::savePos();
 
-            while (true)
+            while (m_Running)
             {
                 tui::clear();
                 UpdateHeader();
@@ -51,7 +54,7 @@ namespace tui
                 tui::print(tui::text::Text{"> "_fgre});
                 std::string command = tui::readline();
                 if (command == "exit")
-                    break;
+                    m_Client.RequestExit();
                 if (command == "chat")
                 {
                     cursor(0, headerStartY + headerLenY + 1);
@@ -61,16 +64,20 @@ namespace tui
                     printl("Pressione enter para enviar a mensagem"_fblu);
                     print(Text{toUser}.FYellow().Bold() + " >>> "_fcya);
                     std::string content = tui::readline();
-                    Message message(m_Client.m_Nickname, toUser, content);
 
                     //TODO: try catch em outra classe ou arquivo
-                    m_Client.m_Socket.Send(message.ToBuffer());
+                    m_Client.SendMessage({m_Client.GetNickname(), toUser, content});
                 }
             }
 
             tui::rbPos();
             tui::down(1);
             tui::rbScreen();
+        }
+
+        void RequestExit() {
+            m_Running = false;
+            //TODO: close stdin?
         }
     };
 }

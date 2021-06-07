@@ -30,14 +30,12 @@ using namespace std::chrono_literals;
 /**
     * Função responsável por reenviar a mensagem recebida do cliente para o cliente alvo
     *
-    * Parâmetros: ServerInfo *server_p => possui as mensagens a serem reenviadas
+    * Parâmetros: ServerInfo &server => possui as mensagens a serem reenviadas
     *
     * Retorno: void
 */
-void resendmessage(ServerInfo *server_p)
+void resendmessage(ServerInfo &server)
 {
-    ServerInfo &server = *server_p;
-
     std::vector<Message> &messages = server.pendingMessages;
     while (server.running)
     {
@@ -86,14 +84,13 @@ void resendmessage(ServerInfo *server_p)
 /**
     * Função responsável por receber e armazenar informações mandadas pelo cliente 
     *
-    * Parâmetros: ServerInfo *server_p => armazena informações recebidas
+    * Parâmetros: ServerInfo &server => armazena informações recebidas
     *             Socket clientSocket  => possui as informações a serem armazenadas
     *
     * Retorno: void
  */
-void listenMessages(ServerInfo *server_p, Socket clientSocket)
+void listenMessages(ServerInfo &server, Socket clientSocket)
 {
-    ServerInfo &server = *server_p;
     Socket &serverSocket = server.socket;
 
     std::cout << "Escutando mensagens de "
@@ -186,9 +183,8 @@ bool waitForIdentification(ServerInfo& server, const Socket &clientSocket)
     return true;
 }
 
-void acceptClients(ServerInfo *server_p)
+void acceptClients(ServerInfo &server)
 {
-    ServerInfo &server = *server_p;
     std::cout << "Aceitando clientes!" << std::endl;
     while (server.running)
     {
@@ -207,14 +203,13 @@ void acceptClients(ServerInfo *server_p)
 
         printClientStats(clientSocket);
 
-        std::thread *serverListenThread = new std::thread(listenMessages, &server, clientSocket);
+        std::thread *serverListenThread = new std::thread(listenMessages, std::ref(server), clientSocket);
         server.threadsVector.push_back(serverListenThread);
     }
 }
 
-void startServer(ServerInfo *server_p, bool waitThreads = true)
+void startServer(ServerInfo &server, bool joinThreads = true)
 {
-    ServerInfo &server = *server_p;
     server.running = true;
     try
     {
@@ -226,15 +221,15 @@ void startServer(ServerInfo *server_p, bool waitThreads = true)
         exit(-1);
     }
 
-    std::thread *serverResendMessagesThread = new std::thread(resendmessage, &server);
+    std::thread *serverResendMessagesThread = new std::thread(resendmessage, std::ref(server));
     server.threadsVector.push_back(serverResendMessagesThread);
 
     server.socket.Listen(server.maxClients);
 
-    std::thread *acceptClientThread = new std::thread(acceptClients, &server);
+    std::thread *acceptClientThread = new std::thread(acceptClients, std::ref(server));
     server.threadsVector.push_back(acceptClientThread);
 
-    if (waitThreads)
+    if (joinThreads)
         joinServerThreads(server);
 }
 
@@ -259,7 +254,7 @@ int main(int argc, char const *argv[])
     tui::printl("Inicializando o Zaplan Server..."_fgre);
     tui::down(2);
 
-    std::thread serverThread(startServer, &server, true);
+    std::thread serverThread(startServer, std::ref(server), true);
     server.serverThread = &serverThread;
     
     tui::ServerTUI serverTui(server);

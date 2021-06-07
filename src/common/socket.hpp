@@ -58,7 +58,7 @@ struct Message
     std::string FromUser, ToUser, Content;
     Message(const std::string &fromUser, const std::string &toUser, const std::string &content);
     Message(const std::string &fromUser, const SocketBuffer &buf);
-    SocketBuffer ToBuffer();
+    SocketBuffer ToBuffer() const;
 };
 
 //Operador que auxilia no cout(impressão) do IP
