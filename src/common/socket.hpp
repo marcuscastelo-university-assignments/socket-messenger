@@ -157,24 +157,22 @@ public:
     Socket Accept();
 
     /**
-     * Função estática que lê o pacote de dados recebido por um dado socket cliente
+     * Função que lê o pacote de dados recebido por meio do socket atual
      *
-     * Parâmetros: const Socket &clientSocket   =>  Socket do cliente a ser lido as informações
-                   int bufferMaxSize            =>  Inteiro que contém o tamanho máximo do buffer da mensagem
+     * Parâmetros: int bufferMaxSize            =>  Inteiro que contém o tamanho máximo do buffer da mensagem
      *
      * Retorno: SocketData  =>  Informações adquiridas pelo socket cliente
     */
-    static SocketBuffer Read(const Socket &clientSocket, int bufferMaxSize = 1024);
+    SocketBuffer Read(int bufferMaxSize = 1024) const;
 
     /**
-     * Função estática que envia um pacote de dados para um socket destino
+     * Função que envia um pacote de dados por meio do socket atual
      *
-     * Parâmetros: const Socket &destination    =>  Socket destino
-                   const SocketData &data       =>  Informações tratadas pelo socket a serem transmitidas
+     * Parâmetros: const SocketBuffer &data       =>  Informações tratadas pelo socket a serem transmitidas
      *
      * Retorno: void
     */
-    static void Send(const Socket &destination, const SocketBuffer &data);
+    void Send(const SocketBuffer &data) const;
 
 
     //TODO: comentar

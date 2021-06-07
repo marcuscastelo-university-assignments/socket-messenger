@@ -63,7 +63,7 @@ void resendmessage(ServerInfo *server_p)
             std::cout << "Enviando mensagem: " << message.Content << " para " << message.ToUser << std::endl;
             try
             {
-                Socket::Send(destSocket->second, message.ToBuffer());
+                destSocket->second.Send(message.ToBuffer());
             }
             catch (ConnectionClosedException &e)
             {
@@ -106,7 +106,7 @@ void listenMessages(ServerInfo *server_p, Socket clientSocket)
             if (it == server.biMapClientSocket.socketClients.end())
                 continue;
 
-            SocketBuffer recBuf = Socket::Read(clientSocket);
+            SocketBuffer recBuf = clientSocket.Read();
             Message message(it->second, recBuf);
             printf("Recebido dados: %s\n", recBuf.buf);
             printf("Convertido de volta dados: %s\n", message.ToBuffer().buf);
@@ -156,7 +156,7 @@ void printClientStats(Socket clientSocket)
 
 bool waitForIdentification(ServerInfo& server, const Socket &clientSocket)
 {
-    SocketBuffer recBuf = Socket::Read(clientSocket);
+    SocketBuffer recBuf = clientSocket.Read();
 
     //TODO: function for this ugly logic
     char *command = recBuf.buf;
@@ -201,7 +201,7 @@ void acceptClients(ServerInfo *server_p)
         {
             static const char *errorMessage = "INVALID_NICK\0";
             static const size_t errorMessageLen = strlen(errorMessage) + 1;
-            Socket::Send(clientSocket, SocketBuffer{errorMessage, errorMessageLen}); 
+            clientSocket.Send(SocketBuffer{errorMessage, errorMessageLen}); 
             std::this_thread::sleep_for(1s);
         }
 

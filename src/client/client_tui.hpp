@@ -64,7 +64,7 @@ namespace tui
                     Message message(m_Client.m_Nickname, toUser, content);
 
                     //TODO: try catch em outra classe ou arquivo
-                    Socket::Send(m_Client.m_Socket, message.ToBuffer());
+                    m_Client.m_Socket.Send(message.ToBuffer());
                 }
             }
 

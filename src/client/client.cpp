@@ -45,7 +45,7 @@ void startTUI()
         mensagem[strlen(mensagem) - 1] = '\0';
         try
         {
-            Socket::Send(serverSocket, {mensagem, strlen(mensagem) + 1});
+            serverSocket.Send({mensagem, strlen(mensagem) + 1});
         }
         catch (ConnectionClosedException &e)
         {
@@ -64,7 +64,7 @@ void receiveMessages()
     {
         try
         {
-            SocketBuffer data = Socket::Read(serverSocket);
+            SocketBuffer data = serverSocket.Read();
             printf("<< Mensagem recebida: \"%s\"\n", (char *)data.buf);
         }
         catch (ConnectionClosedException &e)
@@ -119,7 +119,8 @@ int main(int argc, char const *argv[])
     try
     {
         std::string bufContet = "nick=" + nick;
-        Socket::Send(serverSocket, SocketBuffer{bufContet.c_str(), bufContet.length() + 1});
+        SocketBuffer data{bufContet.c_str(), bufContet.length() + 1};
+        serverSocket.Send(data);
     }
     catch (ConnectionFailedException &e)
     {

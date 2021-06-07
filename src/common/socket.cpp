@@ -127,14 +127,12 @@ Socket Socket::Accept()
     return Socket(sockClientFD, m_Type, clientAddress);
 }
 
-//Static funcs
-
-SocketBuffer Socket::Read(const Socket &clientSocket, int bufferMaxSize)
+SocketBuffer Socket::Read(int bufferMaxSize) const
 {
     size_t readCount = 0;
     char readBuf[bufferMaxSize];
 
-    readCount = recv(clientSocket.GetFD(), readBuf, bufferMaxSize, 0); /* Recebe mensagem do cliente */
+    readCount = recv(m_SocketFD, readBuf, bufferMaxSize, 0); /* Recebe mensagem do cliente */
 
     if (readCount == 0)
     {
@@ -149,9 +147,9 @@ SocketBuffer Socket::Read(const Socket &clientSocket, int bufferMaxSize)
     };
 }
 
-void Socket::Send(const Socket &destination, const SocketBuffer &data)
+void Socket::Send(const SocketBuffer &data) const
 {
-    ssize_t sentByteCount = send(destination.GetFD(), data.buf, data.len, 0);
+    ssize_t sentByteCount = send(m_SocketFD, data.buf, data.len, 0);
 
     if (sentByteCount == -1)
     {
