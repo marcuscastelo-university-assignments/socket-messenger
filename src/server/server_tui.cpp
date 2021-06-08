@@ -61,7 +61,7 @@ namespace tui
         cursor(4, headerStartY + 5);
         std::cout << motd.BBlack() << std::endl;
 
-        downs(2);
+        cursor(4, headerStartY + 7);
         tui::print("  Digite help para obter ajuda"_fblu);
 
         tui::unpauseReadline();
@@ -138,9 +138,6 @@ namespace tui
                 const Socket &userSocket = m_Server.GetUserSockets().GetUserSocket(nickname);
 
                 m_Server.Kick(userSocket);
-
-                m_Server.OnSocketClosed(userSocket);
-
             }
             else if (command == "help")
             {
@@ -156,7 +153,7 @@ namespace tui
                 for (auto &ch : commandsHelp)
                     ss << ch << "\n";
 
-                ss << "\nPressione qualquer tecla para sair da ajuda!"_fbla.BWhite();
+                ss << "\nPressione qualquer tecla para sair da ajuda!                               "_fbla.BWhite();
 
                 cursor(0, headerStartY + headerLenY + 2);
                 delLineR();

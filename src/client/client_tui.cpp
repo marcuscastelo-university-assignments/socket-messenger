@@ -55,7 +55,7 @@ namespace tui
         cursor(4, headerStartY + 5);
         std::cout << motd.BBlack() << std::endl;
 
-        downs(2);
+        cursor(4, headerStartY + 7);
         tui::print("  Digite help para obter ajuda"_fblu);
 
         tui::unpauseReadline();
@@ -147,15 +147,19 @@ namespace tui
                 for (auto &ch : commandsHelp)
                     ss << ch << "\n";
 
-                ss << "\nPressione qualquer tecla para sair da ajuda!"_fbla.BWhite();
+                ss << "\nPressione qualquer tecla para sair da ajuda!                               "_fbla.BWhite();
 
                 cursor(0, headerStartY + headerLenY + 1);
                 delLineR();
                 print(ss.str());
                 tui::readline(1);
             }
+            else
+            {
+                Notify("Commando inválido: " + command);
+                continue;
+            }
         }
-
         tui::rbPos();
         tui::down(1);
         tui::rbScreen();
