@@ -81,7 +81,7 @@ namespace tui
         tui::saveScreen();
         tui::savePos();
 
-        //TODO: fazer funcionar se tiver pique. senão
+        
         // std::thread a([this](std::function<void()> headerUpdate)
         //             {
         //                 while (this->IsRunning())
@@ -131,7 +131,7 @@ namespace tui
                 print(Text{toUser}.FYellow().Bold() + " >>> "_fcya);
                 std::string content = tui::readline();
 
-                //TODO: try catch em outra classe ou arquivo
+                
                 m_Client.SendMessage({m_Client.GetNickname(), toUser, content});
             }
             //Printa todos os 3 comandos que um usuário pode executar
@@ -169,7 +169,7 @@ namespace tui
     {
         m_Running = false;
         tui::cancelReadline();
-        //TODO: close stdin?
+        
     }
 
     void ClientTUI::Notify(const std::string &serverNotification)

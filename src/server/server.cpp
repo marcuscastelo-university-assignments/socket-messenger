@@ -65,7 +65,7 @@ void parseClientName(SocketBuffer *recBuf, char *&command, char *&nick)
     }
 }
 
-//TODO: ver se ta certo
+
 
 bool Server::LoginUser(const Socket &clientSocket)
 {
@@ -90,7 +90,7 @@ bool Server::LoginUser(const Socket &clientSocket)
 
     if (m_UserSockets.IsUserRegistered(nick))
     {
-        //TODO: rejeitar usuários se o nick ja existir
+        return false;
     }
 
     m_UserSockets.RegisterUser(strNick, clientSocket);
@@ -124,7 +124,7 @@ void Server::AcceptLoop()
         m_CurrentTUI->Notify("Nova conexão: "_fgre + clientSocket->GetAddress().ToString());
         std::this_thread::sleep_for(2s);
 
-        //TODO: thread separada para evitar DoS com hanging auth
+        
         try
         {
             while (!LoginUser(*clientSocket))
@@ -162,7 +162,7 @@ void Server::AcceptLoop()
 
 void Server::OnSocketClosed(const Socket &closedSocket)
 {
-    //TODO: parar de usar for, usar uma classe apropriada, eventos etc... coisa pra daqui a um mes.
+    
     size_t pos;
     for (pos = 0; pos < m_ConnectedSockets.size(); pos++)
         if (m_ConnectedSockets[pos] == closedSocket)
@@ -190,10 +190,10 @@ void Server::ClientLoop(Socket clientSocket)
             SocketBuffer recBuf = clientSocket.Read();
             Message message(nickname, recBuf);
             m_CurrentTUI->Notify("Mensagem enfileirada: "_fwhi + tui::text::Text{nickname}.FYellow().Bold() + " -> "_fcya + tui::text::Text{message.ToUser}.FYellow().Bold() + " = \"" + message.Content + "\"");
-            //TODO: remover esta e outras linhas de sleep_for para notify (fazer um esquema de buffer de print)
+            
             std::this_thread::sleep_for(2s);
 
-            //TODO: change clientSocket for real destination
+            
             m_MessagesToSend.push_back(message);
         }
         catch (ConnectionClosedException &e)
@@ -322,7 +322,7 @@ void Server::ForwardMessageLoop()
     std::vector<Message> &messages = m_MessagesToSend;
     while (m_Running)
     {
-        //TODO: mutex para messages
+        
         //itera todas as mensagens pendentes atualmente no servidor
         for (size_t i = 0; i < messages.size(); i++)
         {
@@ -342,7 +342,7 @@ void Server::ForwardMessageLoop()
             auto &destSocket = m_UserSockets.GetUserSocket(destUser);
             m_CurrentTUI->Notify("Enviando mensagem:"_fwhi + tui::text::Text{" \"" + message.Content + "\""}.FCyan() + " de " + tui::text::Text{message.FromUser}.FYellow().Bold() + " para " + tui::text::Text{message.ToUser}.FYellow().Bold());
 
-            //TODO: remove
+            
             std::this_thread::sleep_for(1s);
             try
             {

@@ -123,7 +123,7 @@ public:
         m_AcceptedSockets = std::move(other.m_AcceptedSockets);
     }
     
-    //TODO: comentar (usado no UserSockets)
+    
     Socket &operator=(const Socket& other) {
         m_SocketFD = other.m_SocketFD;
         m_Type = other.m_Type;
