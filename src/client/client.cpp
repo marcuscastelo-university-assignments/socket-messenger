@@ -86,7 +86,18 @@ void Client::ServerSlaveLoop()
         try
         {
             SocketBuffer data = m_Socket.Read();
-            m_CurrentTUI->Notify(data.buf);
+
+            int compare = strncmp(data.buf, "msg=", 4 * sizeof(char));
+            if (compare == 0)
+            {
+                Message receivedMessage(data);
+                m_Messages.push_back(receivedMessage);
+                m_CurrentTUI->Notify("<<<"_fcya + " (" + Text{receivedMessage.FromUser}.FYellow().Bold() + "): " + receivedMessage.Content);
+            }
+            else
+            {
+                m_CurrentTUI->Notify("Unkown data received from server: "_t + data.buf);
+            }
         }
         catch (ConnectionClosedException &e)
         {
@@ -102,6 +113,7 @@ void Client::SendMessage(const Message &message, size_t maxTries)
     try
     {
         m_Socket.Send(message.ToBuffer());
+        m_Messages.push_back(message);
     }
     catch (const ConnectionClosedException &e)
     {
@@ -116,7 +128,7 @@ void Client::RequestExit()
     CloseSockets();
     if (m_CurrentTUI != nullptr)
         m_CurrentTUI->RequestExit();
-    
+
     if (m_ServerSlaveThread != nullptr && m_ServerSlaveThread->joinable())
         m_ServerSlaveThread->detach();
 }

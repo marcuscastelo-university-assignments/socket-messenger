@@ -14,7 +14,7 @@ namespace tui
         tui::clear();
         auto screenSize = getSize();
 
-        printl("  Zaplan Server v0.1"_fgre.Bold());
+        printl("  Zaplan (Server) v0.1"_fgre.Bold());
 
         int headerStartY = 3, headerLenY = 7, headerMarginB = 1, headerMarginX = 2;
         tui::paint(1 + headerMarginX, headerStartY, screenSize.first - headerMarginX, headerStartY + headerLenY - 1, text::TextColorB::Black);
@@ -30,12 +30,14 @@ namespace tui
         cursor(4, headerStartY + 5);
         std::cout << "Última mensagem enviada: ("_bbla.FWhite() << "dalton"_bbla.FYellow().Bold() << "->"_bbla.FCyan() << "marucs"_bbla.FYellow().Bold() << "): "_bbla.FWhite() << "\"Eae brow\""_bbla.FBlue();
 
+        downs(3);
+        tui::print("Digite /help para obter ajuda"_fblu);
         while (m_Running)
         {
-            cursor(0, headerStartY + headerLenY + 1);
+            cursor(0, headerStartY + headerLenY + 2);
             tui::creset();
             tui::delLineR();
-            cursor(0, headerStartY + headerLenY + 1);
+            cursor(0, headerStartY + headerLenY + 2);
             tui::print(tui::text::Text{"> "_fgre});
             std::string command = tui::readline();
             if (command == "exit") {
@@ -50,5 +52,17 @@ namespace tui
 
         tui::rbScreen();
         tui::rbPos();
+    }
+
+    void ServerTUI::Notify(const std::string &notification) {
+        tui::pauseReadline();
+        tui::savePos();
+
+        tui::downs(2);
+        tui::delLineR();
+        tui::print(notification);
+
+        tui::rbPos();
+        tui::unpauseReadline();
     }
 }

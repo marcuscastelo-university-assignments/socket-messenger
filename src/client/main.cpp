@@ -25,7 +25,7 @@ int main(int argc, char const *argv[])
     tui::clear();
     tui::printl("Inicializando Zaplan v0.1 - Cliente"_fgre);
 
-    //caso nenhum ip de servidr
+    //Caso nenhum ip de servidor seja fornecido
     const std::string defaultServerIP("127.0.0.1");
     const std::string *serverIp = &defaultServerIP;
     tui::print("Digite o IP do servidor com o qual deseja se conectar (Enter para localhost): ");
@@ -33,14 +33,19 @@ int main(int argc, char const *argv[])
     if (!input.empty())
         serverIp = &input;
 
+    //Configura o endereço do servidor para a porta 4545
     IPADDR4 serverAddress{*serverIp, 4545};
-
 
     tui::print("Digite seu " + "nick"_fwhi + ": ");
     std::string nick = tui::readline();
     
     Client client;
-    client.ConnectAndLogin(serverAddress, nick);
+    try {
+        client.ConnectAndLogin(serverAddress, nick);
+    } catch(ConnectionFailedException &e) {
+        return -1;
+    }
+    
     client.Start();
 
     tui::printl("Zaplan (Cliente) v0.1 encerrado com sucesso."_fyel);

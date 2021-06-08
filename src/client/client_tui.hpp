@@ -47,7 +47,10 @@ namespace tui
             while (m_Running)
             {
                 tui::clear();
+
+                printl("  Zaplan (Client) v0.1"_fgre.Bold());
                 UpdateHeader();
+                
                 cursor(0, headerStartY + headerLenY + 1);
                 tui::creset();
                 tui::delLineR();
@@ -61,6 +64,8 @@ namespace tui
                 }
                 if (command == "chat")
                 {
+                    m_Client.GetReceivedMessages();
+
                     cursor(0, headerStartY + headerLenY + 1);
                     delLineR();
                     print("Digite o destinatário da mensagem: ");

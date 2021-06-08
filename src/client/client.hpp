@@ -19,20 +19,31 @@ class Client
 
     bool m_Exiting = false;
 
-    mutable std::vector<Message> m_ReceivedMessages = {};
+    mutable std::vector<Message> m_Messages = {};
 
     std::thread *m_ServerSlaveThread = nullptr;
     tui::ClientTUI *m_CurrentTUI = nullptr;
 
     inline void CloseSockets() { m_Socket.Close(); }
+
+    /**
+     * Função que continuamente lê os dados recebidos do servidor enquanto funcionando
+     *
+     * Parâmetros: void
+     * Retorno: void
+     */
     void ServerSlaveLoop();
 
 public:
+    //Define o socket para o tipo TCP
     Client() : m_Socket(SocketType::TCP) {}
 
+    //Função auxiliar que retorna se o cliente existe
     inline bool IsExiting() const { return m_Exiting; }
+    //Função auxiliar que retorna o nickname do cliente
     inline const std::string& GetNickname() const { return m_Nickname; }
-    inline std::vector<Message> GetReceivedMessages() const { return m_ReceivedMessages; }
+    //Função auxiliar que retorna vector com as mensagens recebidas
+    inline std::vector<Message> GetReceivedMessages() const { return m_Messages; }
 
     /**
      * Função que conecta e loga o usuario no servidor
@@ -56,18 +67,26 @@ public:
     void SendMessage(const Message &message, size_t maxTries = 3);
 
     /**
-     * Função que envia a mensagem do cliente para o servidor
+     * Função que inicializa o cliente para o servidor, criando sua thread e a thread da tui
      *
-     * Parâmetros:  const Message &message  =>  Mensagem a ser enviada
-                    size_t maxTries = 3     =>  Número máximo de tentativas de conexão
-
+     * Parâmetros: void
      * Retorno: void
      */
     void Start();
 
+    /**
+     * Função que faz o pedido de saída, fechando os  sockets
+     *
+     * Parâmetros: void
+     * Retorno: void
+     */
     void RequestExit();
 
+    /**
+     * Função que encerra as threads do cliente
+     *
+     * Parâmetros: void
+     * Retorno: void
+     */
     virtual ~Client();
 };
-
-void listenServerPackets(Client &client);

@@ -4,6 +4,13 @@
 #include <string>
 #include "socket.hpp"
 
+/**
+	 * Estrutura criada para facilitar gerenciamento dos clientes
+	 * conectados em tempo de execução. Nela são contidas dois mapas
+	 * não ordenados que armazenam os clientes e seus sockets respectivos,
+	 * facilitando a organização e o fluxo de dados
+	 * */
+
 class UserSockets
 {
     std::unordered_map<std::string, Socket> m_NickToSocket = {};

@@ -21,6 +21,8 @@ namespace tui
 
         inline void RequestStop() { m_Running = false; }
 
+        void Notify(const std::string &notification);
+
 		//Função principal que faz todo tratamento e edição das mensagens do servidor
         void Enter();
     };

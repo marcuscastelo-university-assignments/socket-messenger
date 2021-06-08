@@ -44,10 +44,44 @@ class Server
 
     UserSockets m_UserSockets;
 
+    /**
+    * Função auxiliar que da a confirmação da conexão de um cliente
+    * ao servidor e o adiciona no mapeamento
+    * 
+    * Parâmetros:  const Socket &clientSocket   =>	Socket do novo cliente
+    * 
+    * Return: bool	=>	Caso a adição seja validada - true
+    * 					Se não, false
+    */
     bool LoginUser(const Socket &clientSocket);
 
+    /**
+    * Função que permite que o servidor aceite a entrada de clientes
+    * e armazena sua thread no vector
+    * 
+    * Parâmetros: ServerInfor *server_p	=>	Servidor em questão
+    * 
+    * Return: void
+    */
     void AcceptLoop();
+
+    /**
+    * Função responsável por receber e armazenar informações mandadas pelo cliente 
+    *
+    * Parâmetros: ServerInfo &server => armazena informações recebidas
+    *             Socket clientSocket  => possui as informações a serem armazenadas
+    *
+    * Retorno: void
+ */
     void ClientLoop(Socket clientSocket);
+
+    /**
+    * Função responsável por reenviar a mensagem recebida do cliente para o cliente alvo
+    *
+    * Parâmetros: Server &server => possui as mensagens a serem reenviadas
+    *
+    * Retorno: void
+    */
 
     void ForwardMessageLoop();
 
@@ -68,12 +102,21 @@ public:
     }
 
     void Start();
+
+
     void EnterTUI();
 
     inline bool IsRunning() { return m_Running; }
 
     void NotifyTUI(const std::string &notification);
 
+    /**
+    * Função que encerra o server, fechando os sockets e
+    * finalizando as suas threads
+    * 
+    * Parâmetros: nenhum
+    * Retorno: void
+    */
     void RequestStop();
     void RequestStopSlave();
     void RequestStopTUI();

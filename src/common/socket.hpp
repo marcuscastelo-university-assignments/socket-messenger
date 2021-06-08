@@ -62,6 +62,7 @@ struct Message
 {
     std::string FromUser, ToUser, Content;
     Message(const std::string &fromUser, const std::string &toUser, const std::string &content);
+    Message(const SocketBuffer &buf);
     Message(const std::string &fromUser, const SocketBuffer &buf);
     SocketBuffer ToBuffer() const;
 };
