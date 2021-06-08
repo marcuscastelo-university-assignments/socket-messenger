@@ -32,10 +32,11 @@ You will need a C++17 compiler (preferably **g++**) and **make** (GNU Make) to b
 
 First, clone the repository with ```git clone https://github.com/marcuscastelo/socket-messenger``` to wherever you like.
 
-
-Just type `make client` or `make server`
+Just type `make bin/client` or `make bin/server` (GNU Make must be version 4.2 or newer).
 
 The resulting binaries will be in the `bin` folder
+
+If you are using GNU Make 4.3 or newer, there are also these make rules for compiling and running (useful for debugging): `make run client` and `make run server`
 
 ### Build, Run and Debug with VSCode
 
