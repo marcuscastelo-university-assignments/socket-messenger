@@ -102,13 +102,11 @@ void Socket::Close()
         true_ = 1;
         setsockopt(acceptedFD, SOL_SOCKET, SO_REUSEADDR, &true_, sizeof(int));
         shutdown(acceptedFD, SHUT_RDWR);
-        close(acceptedFD);
     }
 
     true_ = 1;
     setsockopt(m_SocketFD, SOL_SOCKET, SO_REUSEADDR, &true_, sizeof(int));
     shutdown(m_SocketFD, SHUT_RDWR);
-    close(m_SocketFD);
 }
 
 Socket Socket::Accept()

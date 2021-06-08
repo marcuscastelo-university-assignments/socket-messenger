@@ -2,9 +2,83 @@
 #include "server_tui.hpp"
 
 using namespace tui::text_literals;
+using namespace tui::text;
 
 namespace tui
 {
+
+    void ServerTUI::UpdateHeader()
+    {
+        tui::savePos();
+        tui::pauseReadline();
+
+        auto screenSize = tui::getSize();
+
+        tui::paint(1, headerStartY, screenSize.first, headerStartY + headerLenY, text::TextColorB::None);
+        tui::paint(1 + headerMarginX, headerStartY, screenSize.first - headerMarginX, headerStartY + headerLenY - 1, text::TextColorB::Black);
+
+        cursor(4, headerStartY + 1);
+        std::cout << "Status: "_bbla
+                  << (m_Server.IsRunning() ? "Online"_fgre : "Offline"_fred).BBlack().Bold();
+
+        cursor(4, headerStartY + 3);
+        std::cout << m_OnlineStr;
+
+        const static std::vector<std::string> frasesDoWhatsDaTia = {
+            "Beba água, sério",
+            "A cada 1 minuto, 60 segundos se passam na Africa",
+            "O segredo do seu futuro está escondido na sua rotina diária",
+            "Todas as frases concordam no escuro",
+            "42",
+            "El Psy Congroo",
+            "Sugoi, dekai!",
+            "Não se esqueça de usar máscara ao sair",
+            "Use álcool em gel",
+            "Palmeiras não tem mundial",
+            "Arittake no yume wo! kakiatsume!",
+            "5 bola é 10",
+            "Programar é igual andar de bicicleta, mas está tudo pegando fogo e você não sabe andar de bicicleta",
+            "Não se suicide. Devemos viver mais que nossos inimigos",
+            "Não desanime com a derrota de hoje. Amanhã tem mais!",
+            "Só vai dar errado se você tentar"
+            "Mid or feed - Albert Einstein",
+            "Rush B!!!",
+        };
+
+        Text motd = frasesDoWhatsDaTia[std::rand() % frasesDoWhatsDaTia.size()];
+
+        int maxX = tui::getSize().first;
+        int maxLetter = maxX - 2 * headerMarginX - 2;
+        for (size_t i = 1; i <= motd.length(); i++)
+        {
+            if (i % maxLetter == 0)
+            {
+                motd.insert(i - 1, "\n");
+            }
+        }
+
+        cursor(4, headerStartY + 5);
+        std::cout << motd.BBlack() << std::endl;
+
+        downs(2);
+        tui::print("Digite help para obter ajuda"_fblu);
+
+        tui::unpauseReadline();
+        tui::rbPos();
+        fflush(stdout);
+        // cursor(3, headerStartY + headerLenY + 1);
+    }
+
+    void ServerTUI::SetOnline(const std::string &onlineStr)
+    {
+        int onlineCount = onlineStr.empty() ? 0 : 1;
+        for (const auto &c : onlineStr)
+            if (c == ',')
+                onlineCount++;
+
+        m_OnlineStr = "Usuários conectados ("_fwhi.BBlack() + tui::text::Text{std::to_string(onlineCount)}.FYellow().BBlack() + "): "_fwhi.BBlack() + tui::text::Text{onlineStr}.BBlack();
+        UpdateHeader();
+    }
 
     void ServerTUI::Enter()
     {
@@ -15,23 +89,8 @@ namespace tui
         auto screenSize = getSize();
 
         printl("  Zaplan (Server) v0.1"_fgre.Bold());
+        UpdateHeader();
 
-        int headerStartY = 3, headerLenY = 7, headerMarginB = 1, headerMarginX = 2;
-        tui::paint(1 + headerMarginX, headerStartY, screenSize.first - headerMarginX, headerStartY + headerLenY - 1, text::TextColorB::Black);
-
-        cursor(4, headerStartY + 1);
-        std::cout << "Status: "_bbla
-                  << (m_Server.IsRunning() ? "Online"_fgre : "Offline"_fred).BBlack().Bold();
-
-        cursor(4, headerStartY + 3);
-        std::cout << "Usuários conectados ("_fwhi.BBlack() << "3"_fyel.BBlack() << "): "_fwhi.BBlack();
-        std::cout << "dalton, amim, marucs"_bbla;
-
-        cursor(4, headerStartY + 5);
-        std::cout << "Última mensagem enviada: ("_bbla.FWhite() << "dalton"_bbla.FYellow().Bold() << "->"_bbla.FCyan() << "marucs"_bbla.FYellow().Bold() << "): "_bbla.FWhite() << "\"Eae brow\""_bbla.FBlue();
-
-        downs(3);
-        tui::print("Digite /help para obter ajuda"_fblu);
         while (m_Running)
         {
             cursor(0, headerStartY + headerLenY + 2);
@@ -45,9 +104,43 @@ namespace tui
                 tui::printl("Exiting..."_fblu);
                 m_Server.RequestStop();
             }
-            if (command == "stop")
+            else if (command == "stop") {
+                if (!m_Server.IsRunning()) {
+                    Notify("O Servidor não em execução! ignorando comando"_fyel);
+                    continue;
+                }
+                tui::printl("Stopping..."_fblu);
+                m_Server.RequestStopSlave();
+                UpdateHeader();
+            }
+            else if (command == "start") {
+                if (m_Server.IsRunning()) {
+                    Notify("O Servidor já está em execução! ignorando comando"_fyel);
+                    continue;
+                }
+                tui::printl("Starting..."_fblu);
+                m_Server.Start();
+                UpdateHeader();
+            }
+            else if (command == "help")
             {
-                tui::printl("Solicitando a parada do servidor"_fyel);
+                const static std::string commandsHelp[] = {
+                    "  * " + "help"_fcya + "  -  " + "Exibe esta tela"_fwhi,
+                    "  * " + "start"_fcya + "  -  " + "Liga o servidor"_fwhi,
+                    "  * " + "stop"_fcya + "  -  " + "Desliga o servidor"_fwhi,
+                    "  * " + "exit"_fcya + "  -  " + "Desconecta todos os clientes e encerra a aplicação por completo"_fwhi};
+
+                std::stringstream ss;
+                ss << "Os comandos disponíveis atualmente são estes:\n";
+                for (auto &ch : commandsHelp)
+                    ss << ch << "\n";
+
+                ss << "\nPressione qualquer tecla para sair da ajuda!"_fbla.BWhite();
+
+                cursor(0, headerStartY + headerLenY + 2);
+                delLineR();
+                print(ss.str());
+                tui::readline(1);
             }
         }
 

@@ -110,7 +110,14 @@ void Server::AcceptLoop()
         }
         catch (SocketAcceptException &e)
         {
-            m_CurrentTUI->Notify("O servidor não mais aceita clientes!"_fmag);
+            const static std::string text = "O servidor não mais aceita clientes!"_fmag; 
+
+            //Se o usuário terminou o programa com SIGNIT, talvez a TUI não exista mais,
+            //Mas o commando "stop" permite que o servidor seja encerrado sem fechar a TUI. Nesse caso, é preferido que o método Notify seja usado
+            if (m_CurrentTUI != nullptr)
+                m_CurrentTUI->Notify(text);
+            else
+                tui::printl(text);
             continue;
         }
 
@@ -224,6 +231,9 @@ void Server::OnClientCountChanged()
         //FIXME: native address is 0 here, why?
         clientSocket.Send({payload.c_str(), payload.length() + 1});
     }
+
+    if (m_CurrentTUI != nullptr)
+        m_CurrentTUI->SetOnline(payload.c_str()+7); //Everything after online=
 }
 
 void Server::Start()
@@ -260,9 +270,17 @@ void Server::RequestStopSlave()
 {
     m_Running = false;
     CloseAllSockets();
-    for (auto &thread : m_Threads)
-        thread->join();
-    m_AcceptThread->join();
+    for (auto &thread : m_Threads) {
+        if (thread->joinable())
+            thread->join();
+        delete thread;
+    }
+    if (m_AcceptThread->joinable())
+        m_AcceptThread->join();
+
+    delete m_AcceptThread;
+    m_Threads.clear();
+    m_AcceptThread = nullptr;
 }
 
 void Server::RequestStopTUI()

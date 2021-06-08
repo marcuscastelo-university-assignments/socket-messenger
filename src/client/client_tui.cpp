@@ -21,7 +21,7 @@ namespace tui
 
         const static std::vector<std::string> frasesDoWhatsDaTia = {
             "Beba água, sério",
-            "A cada 1 minuto 60 segundos se passam na Africa",
+            "A cada 1 minuto, 60 segundos se passam na Africa",
             "O segredo do seu futuro está escondido na sua rotina diária",
             "Todas as frases concordam no escuro",
             "42",
@@ -40,7 +40,7 @@ namespace tui
             "Rush B!!!",
         };
 
-        std::string motd = frasesDoWhatsDaTia[std::rand() % frasesDoWhatsDaTia.size()];
+        Text motd = frasesDoWhatsDaTia[std::rand() % frasesDoWhatsDaTia.size()];
 
         int maxX = tui::getSize().first;
         int maxLetter = maxX - 2 * headerMarginX - 2;
@@ -53,7 +53,10 @@ namespace tui
         }
 
         cursor(4, headerStartY + 5);
-        std::cout << motd << std::endl;
+        std::cout << motd.BBlack() << std::endl;
+
+        downs(2);
+        tui::print("Digite help para obter ajuda"_fblu);
 
         tui::unpauseReadline();
         tui::rbPos();
@@ -96,10 +99,10 @@ namespace tui
             printl("  Zaplan (Client) v0.1"_fgre.Bold());
             UpdateHeader();
 
-            cursor(0, headerStartY + headerLenY + 1);
+            cursor(0, headerStartY + headerLenY + 2);
             tui::creset();
             tui::delLineR();
-            cursor(0, headerStartY + headerLenY + 1);
+            cursor(0, headerStartY + headerLenY + 2);
             tui::print(tui::text::Text{"> "_fgre});
             std::string command = tui::readline();
 

@@ -14,14 +14,34 @@ namespace tui
     {
         Server &m_Server;
 
+		//TODO: verificar edge-cases (destructor chamado sem stop, etc.)
+		//Verificação se está ativo
         bool m_Running = false;
 
-		
+		//Função que atualiza o header do servidor, com o status (online/offline) e quem está online
+        void UpdateHeader();
+
+        int headerStartY = 3, headerLenY = 7, headerMarginB = 1, headerMarginX = 2;
+
+        std::string m_OnlineStr;
     public:
 		//Construtor da classe ServerTUI
         ServerTUI(Server &server) : m_Server(server) {}
 
-		//Método que retorna se o servidor está online
+		/**
+		 * Função que atualiza os nicknames de todos os clientes onlines nos headers de todos os clientes
+		 * 
+		 * Parâmetros:	const std::string &onlineStr	=>	String que armazena os nicknames de usuários online
+		 * 
+		 * Retorno: void
+		*/
+        void SetOnline(const std::string &onlineStr);
+
+		//Método que retorna se a TUI está em execução
+        inline bool IsRunning() { return m_Running; }
+
+
+		//Método que solicita o encerramento da TUI (geralmente chamado a partir de outra thread)
         inline void RequestStop() { m_Running = false; }
 
 		/**
