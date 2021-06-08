@@ -27,6 +27,8 @@ using namespace std::chrono_literals;
 #include <memory>
 #include <mutex>
 
+using guard = std::lock_guard<std::mutex>;
+
 Server::Server(IPADDR4 address, int maxClients) : m_Socket(SocketType::TCP), m_Address(address), m_MaxClients(maxClients)
 {
     m_CurrentTUI = new tui::ServerTUI(*this);
@@ -63,8 +65,6 @@ void parseClientName(SocketBuffer *recBuf, char *&command, char *&nick)
         }
     }
 }
-
-
 
 bool Server::LoginUser(const Socket &clientSocket)
 {
@@ -123,7 +123,6 @@ void Server::AcceptLoop()
         m_CurrentTUI->Notify("Nova conexão: "_fgre + clientSocket->GetAddress().ToString());
         std::this_thread::sleep_for(2s);
 
-        
         try
         {
             while (!LoginUser(*clientSocket))
@@ -161,7 +160,7 @@ void Server::AcceptLoop()
 
 void Server::OnSocketClosed(const Socket &closedSocket)
 {
-    
+
     size_t pos;
     for (pos = 0; pos < m_ConnectedSockets.size(); pos++)
         if (m_ConnectedSockets[pos] == closedSocket)
@@ -189,11 +188,13 @@ void Server::ClientLoop(Socket clientSocket)
             SocketBuffer recBuf = clientSocket.Read();
             Message message(nickname, recBuf);
             m_CurrentTUI->Notify("Mensagem enfileirada: "_fwhi + tui::text::Text{nickname}.FYellow().Bold() + " -> "_fcya + tui::text::Text{message.ToUser}.FYellow().Bold() + " = \"" + message.Content + "\"");
-            
+
             std::this_thread::sleep_for(2s);
 
-                        
-            m_MessagesToSend.push_back(message);
+            guard g_(m_Mutexes.m_MessagesToSendMutex);
+            {
+                m_MessagesToSend.push_back(message);
+            }
         }
         catch (ConnectionClosedException &e)
         {
@@ -211,7 +212,8 @@ void Server::ClientLoop(Socket clientSocket)
 void Server::CloseAllSockets()
 {
 
-    while (!m_ConnectedSockets.empty()) {
+    while (!m_ConnectedSockets.empty())
+    {
         auto &socket = m_ConnectedSockets.back();
         m_ConnectedSockets.pop_back();
         Kick(socket);
@@ -318,10 +320,14 @@ void Server::RequestStopTUI()
 
 void Server::ForwardMessageLoop()
 {
-    std::vector<Message> &messages = m_MessagesToSend;
+    std::vector<Message> messages = {};
+    guard g_(m_Mutexes.m_MessagesToSendMutex);
+    {
+        std::swap(messages, m_MessagesToSend);
+    }
+
     while (m_Running)
     {
-        
         //itera todas as mensagens pendentes atualmente no servidor
         for (size_t i = 0; i < messages.size(); i++)
         {
@@ -341,7 +347,6 @@ void Server::ForwardMessageLoop()
             auto &destSocket = m_UserSockets.GetUserSocket(destUser);
             m_CurrentTUI->Notify("Enviando mensagem:"_fwhi + tui::text::Text{" \"" + message.Content + "\""}.FCyan() + " de " + tui::text::Text{message.FromUser}.FYellow().Bold() + " para " + tui::text::Text{message.ToUser}.FYellow().Bold());
 
-            
             std::this_thread::sleep_for(1s);
             try
             {
