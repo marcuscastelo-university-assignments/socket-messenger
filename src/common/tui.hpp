@@ -190,24 +190,31 @@ namespace tui::text_literals
 
 }
 
+//namespace que contém as funções do TUI que envolvem salvar o pointer do terminal,
+//printar mensagens formatadas e retornar pointer para onde estava
 namespace tui
 {
+	//Funções responsáveis por dar formatação (tab) ao texto do terminal
     static int currentTabbing = 0;
-
     inline void tab(int amount = 1) { currentTabbing+=amount; }
     inline void untab(int amount = 1) { currentTabbing = std::max(0,currentTabbing-amount); }
 
+	//Limpa o terminal
     void clear();
 
+	//Setta a cor do foreground ou backgroud do texto
     void color(text::TextColorF);
     void color(text::TextColorB);
     void creset();
 
+	//Formato de texto para printar
     void print(const text::Text &text, text::TextColorF fg = text::TextColorF::None);
     void printl(const text::Text &text = "", text::TextColorF fg = text::TextColorF::None);
 
+	//Pega a posição do pointer do terminal
     void cursor(int x, int y);
 
+	//Move o pointer d terminal
     void up(int amount = 1);
     void down(int amount = 1);
     void ups(int amount = 1);
@@ -215,10 +222,12 @@ namespace tui
     void left(int amount = 1);
     void right(int amount = 1);
 
+	//Apaga linha do terminal
     void delLineR();
     void delLineL();
     void delLine();
 
+	//Funções de salvar a posição do pointer e depois dar o rollback
     void savePos();
     void rbPos();
 
@@ -228,11 +237,13 @@ namespace tui
 
     std::pair<int,int> getSize();
 
+	//Leitura da entrada
     std::string readline(int maxChars = 4096);
     void pauseReadline();
     void unpauseReadline();
     void cancelReadline();
 
+	//Função que "desenha" no terminal
     void paint(int xs, int ys, int xe, int ye, text::TextColorB bg);
 }
 

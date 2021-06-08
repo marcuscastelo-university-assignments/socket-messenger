@@ -319,7 +319,7 @@ namespace tui::text
         if (Style.bgColor != TextColorB::None)
             ss << createColorString(Style.bgColor) << ";";
 
-        ss.seekp(-1, std::ios_base::end); //Prereq to temove last semicolon (actually just move the cursor to end-1)
+        ss.seekp(-1, std::ios_base::end); //Prereq to remove last semicolon (actually just move the cursor to end-1)
         ss << "m";
 
         std::string start = ss.str();
