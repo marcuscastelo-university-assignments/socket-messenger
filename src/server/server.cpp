@@ -159,7 +159,8 @@ void Server::AcceptLoop()
 
 void Server::OnSocketClosed(SocketRef closedSocket)
 {
-    m_UserSockets.UnregisterUser(*closedSocket.get());
+    if (m_UserSockets.IsUserRegistered(*closedSocket.get()))
+        m_UserSockets.UnregisterUser(*closedSocket.get());
     OnClientCountChanged();
 }
 
@@ -205,12 +206,11 @@ void Server::CloseAllSockets()
     {
         auto &user = usersVecCopy.back();
         Kick(user.m_Socket);
+        // std::thread(std::bind(&Server::Kick, this, user.m_Socket)).detach();
         usersVecCopy.pop_back();
     }
-
-    std::this_thread::sleep_for(4s);
-
     m_UserSockets.UnregisterAllUsers();
+
 
     m_Socket.Shutdown();
 }
@@ -317,7 +317,7 @@ void Server::ForwardMessageLoop()
 
             std::swap(messages, m_MessagesToSend);
         }
-        
+
         //itera todas as mensagens pendentes atualmente no servidor
         for (size_t i = 0; i < messages.size(); i++)
         {

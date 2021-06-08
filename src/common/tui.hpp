@@ -16,6 +16,8 @@
 #include <string>
 #include <sys/ioctl.h>
 
+#include <mutex>
+
 namespace tui::text
 {
     //Enum utilizado para highlight do foreground

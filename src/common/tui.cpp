@@ -100,13 +100,18 @@ namespace tui
     {
         printf("\033[2K");
     }
+
+    static std::mutex __pos_mutex;
+
     void savePos()
     {
+        __pos_mutex.lock();
         printf("\033[s");
     }
     void rbPos()
     {
         printf("\033[u");
+        __pos_mutex.unlock();
     }
     void saveScreen()
     {

@@ -19,27 +19,29 @@ using namespace tui::text_literals;
 namespace tui
 {
 	//Classe ClientTUI, responsável por todo tratamento de print out para o client
-    class ClientTUI
-    {
+	class ClientTUI
+	{
 		//Armazena o cliente em questão
-        Client &m_Client;
+		Client &m_Client;
 
 		//Verificação se está ativo
-        bool m_Running = false;
+		bool m_Running = false;
 
 		//Função que atualiza o header do cliente, sempre mostrando seu nickname, quem está online
 		// e também uma frase do dia
-        void UpdateHeader();
+		void UpdateScreen();
 
-        int headerStartY = 3, headerLenY = 7, headerMarginB = 1, headerMarginX = 2;
 
-        std::string m_OnlineStr;
-    public:
+		int headerStartY = 3, headerLenY = 9, headerMarginB = 1, headerMarginX = 2;
+
+		std::string m_OnlineStr;
+
+	public:
 		//Construtor da classe ClientTUI
-        ClientTUI(Client &client) : m_Client(client) {}
+		ClientTUI(Client &client) : m_Client(client) {}
 
 		//Função que retorna um bool; Verifica se o cliente está online
-        inline bool IsRunning() { return m_Running; }
+		inline bool IsRunning() { return m_Running; }
 
 		/**
 		 * Função que atualiza os nicknames de todos os clientes onlines nos headers de todos os clientes
@@ -48,8 +50,7 @@ namespace tui
 		 * 
 		 * Retorno: void
 		*/
-        void SetOnline(const std::string &onlineStr);
-        
+		void SetOnline(const std::string &onlineStr);
 
 		/**
 		 * Função que recepciona o cliente e faz a chamada das outras funções essenciais para a interface do cliente
@@ -58,8 +59,7 @@ namespace tui
 		 * 
 		 * Retorno: void
 		*/
-        void Enter();
-
+		void Enter();
 
 		/**
 		 * Função que setta o usuário como desconectado
@@ -68,8 +68,7 @@ namespace tui
 		 * 
 		 * Retorno:	void
 		*/
-        void RequestExit();
-        
+		void RequestExit();
 
 		/**
 		 * Função que notifica (printa na tela do usuário) as informações recebidas do servidor
@@ -78,7 +77,15 @@ namespace tui
 		 * 
 		 * Retorno:	void
 		*/
-        void Notify(const std::string &serverNotification);
-        
-    };
+		void Notify(const std::string &serverNotification);
+
+		/**
+		 * Função que notifica (printa na tela do usuário) as mensagens recebidas
+		 * 
+		 * Parâmetros:	const std::string &fromUser	=>	usuário que mandou
+		 * 
+		 * Retorno:	void
+		*/
+		void PrintMessages(const std::string& fromUser);
+	};
 }
