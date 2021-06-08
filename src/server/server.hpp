@@ -13,6 +13,8 @@
 #include <chrono>
 using namespace std::chrono_literals;
 
+#include <mutex>
+
 namespace tui
 {
     class ServerTUI;
@@ -46,6 +48,10 @@ class Server
     std::vector<Message> m_MessagesToSend = {};
 
     UserSockets m_UserSockets;
+
+    struct {
+        std::mutex m_MessagesToSendMutex;
+    } m_Mutexes;
 
     /**
     * Função auxiliar que registra o nick do usuário e seu socket correspondente impedindo repetições

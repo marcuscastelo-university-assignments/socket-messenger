@@ -4,14 +4,18 @@
 #include <string>
 #include "socket.hpp"
 
+using guard = std::lock_guard<typename std::mutex>;
+
 void UserSockets::RegisterUser(const std::string &nickname, const Socket &socket)
 {
+    guard gd_(m_Mutex);
     m_NickToSocket.insert({nickname, socket});
     m_SocketToNick.insert({socket, nickname});
 }
 
 void UserSockets::UnregisterUser(const Socket &userSocket)
 {
+    guard gd_(m_Mutex);
     auto it = m_SocketToNick.find(userSocket);
     if (it == m_SocketToNick.end())
         throw std::logic_error("Cannot unregister user (sock) since it is not registered");
@@ -19,6 +23,7 @@ void UserSockets::UnregisterUser(const Socket &userSocket)
 }
 void UserSockets::UnregisterUser(const std::string &nickname)
 {
+    guard gd_(m_Mutex);
     auto it = m_NickToSocket.find(nickname);
     if (it == m_NickToSocket.end())
         throw std::logic_error("Cannot unregister user (nick) since it is not registered");
@@ -36,6 +41,7 @@ bool UserSockets::IsUserRegistered(const std::string &nickname)
 
 const std::string &UserSockets::GetUserNick(const Socket &userSocket) const
 {
+    guard gd_(m_Mutex);
     auto it = m_SocketToNick.find(userSocket);
     if (it == m_SocketToNick.end())
         throw std::logic_error("Cannot get user (sock) since it is not registered");
@@ -43,6 +49,7 @@ const std::string &UserSockets::GetUserNick(const Socket &userSocket) const
 }
 const Socket &UserSockets::GetUserSocket(const std::string &nickname) const
 {
+    guard gd_(m_Mutex);
     auto it = m_NickToSocket.find(nickname);
     if (it == m_NickToSocket.end())
         throw std::logic_error("Cannot get user (nick) since it is not registered");
