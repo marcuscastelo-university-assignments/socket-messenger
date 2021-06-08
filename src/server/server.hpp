@@ -47,7 +47,7 @@ class Server
     bool LoginUser(const Socket &clientSocket);
 
     void AcceptLoop();
-    void ClientLoop(Socket &clientSocket);
+    void ClientLoop(Socket clientSocket);
 
     void ForwardMessageLoop();
 

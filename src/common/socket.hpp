@@ -33,6 +33,11 @@ struct SocketBindException : public std::exception
     DEF_WHAT("Error on binding server.")
 };
 
+struct SocketAcceptException : public std::exception
+{
+    DEF_WHAT("Accept failed.")
+};
+
 //Estrutura auxiliar para armazenar o IP e a porta utilizadas
 struct IPADDR4
 {

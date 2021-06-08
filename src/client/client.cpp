@@ -117,7 +117,8 @@ void Client::RequestExit()
     if (m_CurrentTUI != nullptr)
         m_CurrentTUI->RequestExit();
     
-    m_ServerSlaveThread->join();
+    if (m_ServerSlaveThread != nullptr && m_ServerSlaveThread->joinable())
+        m_ServerSlaveThread->detach();
 }
 
 //TODO: check if properly stopped

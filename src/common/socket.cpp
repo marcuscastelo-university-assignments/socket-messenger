@@ -99,11 +99,13 @@ void Socket::Close()
 
     for (int acceptedFD : m_AcceptedSockets)
     {
+        true_ = 1;
         setsockopt(acceptedFD, SOL_SOCKET, SO_REUSEADDR, &true_, sizeof(int));
         shutdown(acceptedFD, SHUT_RDWR);
         close(acceptedFD);
     }
 
+    true_ = 1;
     setsockopt(m_SocketFD, SOL_SOCKET, SO_REUSEADDR, &true_, sizeof(int));
     shutdown(m_SocketFD, SHUT_RDWR);
     close(m_SocketFD);
@@ -117,7 +119,7 @@ Socket Socket::Accept()
     int sockClientFD = accept(m_SocketFD, (sockaddr *)&remoteaddr, &remoteaddr_len);
     if (sockClientFD == -1)
     {
-        throw std::runtime_error("Error on Socket::Accept! errno = " + errno);
+        throw SocketAcceptException();
     }
 
     IPADDR4 clientAddress{inet_ntoa(remoteaddr.sin_addr), ntohs(remoteaddr.sin_port)};

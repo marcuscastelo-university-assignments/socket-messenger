@@ -26,6 +26,7 @@ using namespace std::chrono_literals;
 
 #include "server_tui.hpp"
 
+#include <memory>
 
 /**
  * Função auxiliar que faz o parse para identificar o nome do cliente
@@ -36,8 +37,9 @@ using namespace std::chrono_literals;
  * 
  * Return: void
 */
-void parseClientName(SocketBuffer *recBuf, char *command, char *nick){
-	for (size_t i = 0; i < recBuf->len; i++)
+void parseClientName(SocketBuffer *recBuf, char *&command, char *&nick)
+{
+    for (size_t i = 0; i < recBuf->len; i++)
     {
         if (recBuf->buf[i] == '=')
         {
@@ -61,12 +63,13 @@ void parseClientName(SocketBuffer *recBuf, char *command, char *nick){
 */
 bool Server::LoginUser(const Socket &clientSocket)
 {
+
     SocketBuffer recBuf = clientSocket.Read();
 
     char *command = recBuf.buf;
     char *nick = recBuf.buf;
-    
-	parseClientName(&recBuf, command, nick);
+
+    parseClientName(&recBuf, command, nick);
 
     std::string strCommand(command);
     std::string strNick(nick);
@@ -102,25 +105,42 @@ void Server::AcceptLoop()
     std::cout << "Aceitando clientes!" << std::endl;
     while (m_Running)
     {
-        Socket clientSocket = m_Socket.Accept();
-        m_ConnectedSockets.push_back(clientSocket);
+        std::unique_ptr<Socket> clientSocket;
+        try
+        {
+            clientSocket.reset(new Socket(m_Socket.Accept()));
+        }
+        catch (SocketAcceptException &e)
+        {
+            //TODO: log
+            continue;
+        }
+        m_ConnectedSockets.push_back(*clientSocket);
 
-        NotifyTUI("Nova conexão: " + clientSocket.GetAddress().ToString());
+        NotifyTUI("Nova conexão: " + clientSocket->GetAddress().ToString());
 
         //TODO: thread separada para evitar DoS com hanging auth
-        while (!LoginUser(clientSocket))
+        try
         {
-            static const char *errorMessage = "INVALID_NICK\0";
-            static const size_t errorMessageLen = strlen(errorMessage) + 1;
-            clientSocket.Send(SocketBuffer{errorMessage, errorMessageLen});
-            std::this_thread::sleep_for(1s);
+            while (!LoginUser(*clientSocket))
+            {
+                static const char *errorMessage = "INVALID_NICK\0";
+                static const size_t errorMessageLen = strlen(errorMessage) + 1;
+                clientSocket->Send(SocketBuffer{errorMessage, errorMessageLen});
+                std::this_thread::sleep_for(1s);
+            }
+        }
+        catch (ConnectionClosedException &e)
+        {
+            continue;
+            //TODO: log as debug message
         }
 
-        auto &nickname = m_UserSockets.GetUserNick(clientSocket);
+        auto &nickname = m_UserSockets.GetUserNick(*clientSocket);
 
-        NotifyTUI("Conexão autenticada com sucesso, " + clientSocket.GetAddress().ToString() + " agora é identificado como " + nickname);
+        NotifyTUI("Conexão autenticada com sucesso, " + clientSocket->GetAddress().ToString() + " agora é identificado como " + nickname);
 
-        std::thread *serverListenThread = new std::thread(std::bind(&Server::ClientLoop, this, std::ref(clientSocket)));
+        std::thread *serverListenThread = new std::thread(std::bind(&Server::ClientLoop, this, *clientSocket));
         m_Threads.push_back(serverListenThread);
     }
 }
@@ -133,7 +153,7 @@ void Server::AcceptLoop()
     *
     * Retorno: void
  */
-void Server::ClientLoop(Socket &clientSocket)
+void Server::ClientLoop(Socket clientSocket)
 {
     Socket &serverSocket = m_Socket;
 
@@ -172,7 +192,6 @@ void Server::CloseAllSockets()
         socket.Close();
     m_Socket.Close();
 }
-
 
 /**
  * Função responsável por iniciar o servidor, executando o bind
@@ -310,8 +329,14 @@ Server::~Server()
 {
     CloseAllSockets();
     m_ConnectedSockets.clear();
-    for (auto& thread : m_Threads) { thread->join(); delete thread; }
-    m_AcceptThread->join();
+    for (auto &thread : m_Threads)
+    {
+        if (thread->joinable())
+            thread->join();
+        delete thread;
+    }
+    if (m_AcceptThread != nullptr && m_AcceptThread->joinable())
+        m_AcceptThread->join();
     delete m_AcceptThread;
     m_Threads.clear();
     m_AcceptThread = nullptr;

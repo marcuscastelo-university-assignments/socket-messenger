@@ -25,6 +25,7 @@ int main(int argc, char const *argv[])
     tui::clear();
     tui::printl("Inicializando Zaplan v0.1 - Cliente"_fgre);
 
+    //caso nenhum ip de servidr
     const std::string defaultServerIP("127.0.0.1");
     const std::string *serverIp = &defaultServerIP;
     tui::print("Digite o IP do servidor com o qual deseja se conectar (Enter para localhost): ");
