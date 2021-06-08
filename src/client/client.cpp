@@ -94,6 +94,10 @@ void Client::ServerSlaveLoop()
                 m_Messages.push_back(receivedMessage);
                 m_CurrentTUI->Notify("<<<"_fcya + " (" + Text{receivedMessage.FromUser}.FYellow().Bold() + "): " + receivedMessage.Content);
             }
+            else if (strncmp(data.buf, "online=", 7) == 0) {
+                //TODO: deixar mais bonito
+                m_CurrentTUI->SetOnline(data.buf+7);
+            }
             else
             {
                 m_CurrentTUI->Notify("Unkown data received from server: "_t + data.buf);

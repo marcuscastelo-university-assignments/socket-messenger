@@ -127,7 +127,7 @@ namespace tui
     static bool ___reading_line = false;
     static bool ___reading_line_paused = false;
 
-    std::string readline()
+    std::string readline(int maxChars)
     {
         static struct termios oldt, newt;
         tcgetattr(STDIN_FILENO, &oldt);
@@ -140,12 +140,12 @@ namespace tui
         std::stringstream ss;
         ___reading_line = true;
 
-        char buf[4096];
+        std::vector<char> buf(maxChars, 0);
         int pos = -1;
-        int maxPos = 0;
+        int greatestPos = 0;
 
         char c;
-        while (pos < 4096)
+        while (pos < maxChars)
         {
             pos = std::max(0, pos);
             if (!___reading_line_paused)
@@ -155,13 +155,11 @@ namespace tui
                 
                 if (c == 127) {
                     if (pos == 0) continue;
-                    //TODO: change ss to char[]?
-                    //FIXME: backspace not working in ss
                     ss.seekp(-1, std::ios_base::end);
                     ss << "\0";
                     ss.seekp(-1, std::ios_base::end);
                     pos--;
-                    maxPos--;
+                    greatestPos--;
                     left(1);
                     print(" ");
                     fflush(stdout);
@@ -173,7 +171,7 @@ namespace tui
                     if (getchar() != '[') continue;
                     char dir = getchar();
                     if (dir == 'D' && pos > 0 ) { pos--; left(); }
-                    if (dir == 'C' && pos < maxPos ) { pos++; right(); }
+                    if (dir == 'C' && pos < greatestPos ) { pos++; right(); }
                     continue;
                 }
 
@@ -187,7 +185,7 @@ namespace tui
                 }
                 buf[pos] = c;
                 pos++;
-                maxPos++;
+                greatestPos++;
             }
             else
                 std::this_thread::sleep_for(10ms);
@@ -198,7 +196,9 @@ namespace tui
         /*restore the old settings*/
         tcsetattr(STDIN_FILENO, TCSANOW, &oldt);
 
-        return std::string(buf);
+
+
+        return std::string(buf.begin(), buf.begin()+greatestPos);
     }
 
     void pauseReadline()

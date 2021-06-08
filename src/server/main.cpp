@@ -14,6 +14,7 @@ using namespace tui::text_literals;
 */
 int main(int argc, char const *argv[])
 {
+    std::srand(time(NULL));
     tui::clear();
 
     IPADDR4 serverIP{"0.0.0.0", 4545};

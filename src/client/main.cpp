@@ -14,6 +14,7 @@
 using namespace std::chrono_literals;
 
 #include <thread>
+#include <random>
 
 #include "socket.hpp"
 #include "client_tui.hpp"
@@ -22,6 +23,7 @@ using namespace tui::text_literals;
 
 int main(int argc, char const *argv[])
 {
+    std::srand(time(NULL));
     tui::clear();
     tui::printl("Inicializando Zaplan v0.1 - Cliente"_fgre);
 

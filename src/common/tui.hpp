@@ -228,7 +228,7 @@ namespace tui
 
     std::pair<int,int> getSize();
 
-    std::string readline();
+    std::string readline(int maxChars = 4096);
     void pauseReadline();
     void unpauseReadline();
     void cancelReadline();
