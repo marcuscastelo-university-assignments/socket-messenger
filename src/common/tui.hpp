@@ -231,7 +231,7 @@ namespace tui
     std::string readline();
     void pauseReadline();
     void unpauseReadline();
-    int getTypedCharacterCount();
+    void cancelReadline();
 
     void paint(int xs, int ys, int xe, int ye, text::TextColorB bg);
 }

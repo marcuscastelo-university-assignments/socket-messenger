@@ -125,7 +125,6 @@ namespace tui
     }
 
     static bool ___reading_line = false;
-    static int ___current_input_pos = 0;
     static bool ___reading_line_paused = false;
 
     std::string readline()
@@ -138,27 +137,31 @@ namespace tui
         newt.c_lflag &= ~ECHO;
         tcsetattr(STDIN_FILENO, TCSANOW, &newt);
 
-
         std::stringstream ss;
         ___reading_line = true;
 
+        char buf[4096];
+        int pos = -1;
+        int maxPos = 0;
+
         char c;
-        while (true)
+        while (pos < 4096)
         {
-            ___current_input_pos = std::max(0, ___current_input_pos);
+            pos = std::max(0, pos);
             if (!___reading_line_paused)
             {
                 c = getchar();
                 fflush(stdin);
                 
                 if (c == 127) {
-                    if (___current_input_pos == 0) continue;
+                    if (pos == 0) continue;
                     //TODO: change ss to char[]?
                     //FIXME: backspace not working in ss
                     ss.seekp(-1, std::ios_base::end);
                     ss << "\0";
                     ss.seekp(-1, std::ios_base::end);
-                    ___current_input_pos--;
+                    pos--;
+                    maxPos--;
                     left(1);
                     print(" ");
                     fflush(stdout);
@@ -169,8 +172,8 @@ namespace tui
                 if (c == '\033') {
                     if (getchar() != '[') continue;
                     char dir = getchar();
-                    if (dir == 'D') ___current_input_pos--;
-                    if (dir == 'E') ___current_input_pos++;
+                    if (dir == 'D' && pos > 0 ) { pos--; left(); }
+                    if (dir == 'C' && pos < maxPos ) { pos++; right(); }
                     continue;
                 }
 
@@ -179,21 +182,23 @@ namespace tui
                 if (c == '\n')
                 {
                     ___reading_line = false;
-                    ___current_input_pos = 0;
                     ___reading_line_paused = false;
                     break;
                 }
-                ss << c;
-                ___current_input_pos++;
+                buf[pos] = c;
+                pos++;
+                maxPos++;
             }
             else
                 std::this_thread::sleep_for(10ms);
         }
 
+        buf[pos] = '\0';
+
         /*restore the old settings*/
         tcsetattr(STDIN_FILENO, TCSANOW, &oldt);
 
-        return ss.str();
+        return std::string(buf);
     }
 
     void pauseReadline()
@@ -207,8 +212,11 @@ namespace tui
         if (___reading_line)
             ___reading_line_paused = false;
     }
+    
+    void cancelReadline()
+    {
 
-    int getTypedCharacterCount() { return ___current_input_pos; }
+    }
 
     void paint(int xs, int ys, int xe, int ye, text::TextColorB bg)
     {
