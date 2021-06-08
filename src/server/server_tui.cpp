@@ -130,14 +130,15 @@ namespace tui
                 }
 
                 std::string nickname = command.substr(5);
-                if (!m_Server.GetUserSockets().IsUserRegistered(nickname)) {
-                    Notify("User "_fred + Text{nickname}.FYellow().Bold() + " doesn't exist"_fred);
-                    continue;
-                }
+                //FIXME: usar mutex { (tb tem outro lugar mto parecido (isRegistered))
+                    if (!m_Server.GetUserSockets().IsUserRegistered(nickname)) {
+                        Notify("User "_fred + Text{nickname}.FYellow().Bold() + " doesn't exist"_fred);
+                        continue;
+                    }
 
-                const Socket &userSocket = m_Server.GetUserSockets().GetUserSocket(nickname);
-
-                m_Server.Kick(userSocket);
+                    User user = *m_Server.GetUserSockets().FindByNick(nickname);
+                //}
+                m_Server.Kick(user.m_Socket);
             }
             else if (command == "help")
             {

@@ -12,9 +12,13 @@
 #include <sstream>
 #include <vector>
 #include <exception>
+#include <memory>
 
 #include "socket_exceptions.hpp"
 #include "message.hpp"
+
+class Socket;
+using SocketRef = std::shared_ptr<Socket>;
 
 //Estrutura auxiliar para armazenar o IP e a porta utilizadas
 struct IPADDR4
@@ -23,7 +27,6 @@ struct IPADDR4
     int port;
     std::string ToString() const;
 };
-
 
 //Operador que auxilia no cout(impressão) do IP
 std::ostream &operator<<(std::ostream &o, const IPADDR4 &ip);
@@ -37,10 +40,6 @@ std::ostream &operator<<(std::ostream &o, const IPADDR4 &ip);
  * Return: sockaddr_in => estrutura com ip e a porta
  */
 sockaddr_in makeAddr(std::vector<int> ipParts, int port);
-
-class User
-{
-};
 
 //Enum que define se o protocolo é TCP ou UDP
 enum SocketType : int
@@ -69,8 +68,11 @@ public:
     //Construtor da classe Socket, que retorna um socket do tipo passado como argumento
     Socket(SocketType type);
 
+    Socket(const Socket &other) = delete;
+    Socket &operator=(const Socket &other) = delete;
+
     //Construtor do tipo copy-constructor, permite clonar um Socket (só clona o objeto, o FD (File Descriptor) é o mesmo)
-    Socket(const Socket& other) = default;
+    // Socket(const Socket& other) = default;
     Socket(const Socket&& other) {
         m_SocketFD = other.m_SocketFD;
         m_Type = other.m_Type;
@@ -78,16 +80,15 @@ public:
         m_NativeAddress = other.m_NativeAddress;
         m_AcceptedSockets = std::move(other.m_AcceptedSockets);
     }
-    
-    
-    Socket &operator=(const Socket& other) {
-        m_SocketFD = other.m_SocketFD;
-        m_Type = other.m_Type;
-        m_Address = other.m_Address;
-        m_NativeAddress = other.m_NativeAddress;
-        m_AcceptedSockets = other.m_AcceptedSockets;
-        return *this;
-    }
+
+    // Socket &operator=(const Socket& other) {
+    //     m_SocketFD = other.m_SocketFD;
+    //     m_Type = other.m_Type;
+    //     m_Address = other.m_Address;
+    //     m_NativeAddress = other.m_NativeAddress;
+    //     m_AcceptedSockets = other.m_AcceptedSockets;
+    //     return *this;
+    // }
 
     //Construtor da classe Socket, que retorna um socket com o valor passado
     Socket(int socketFD, SocketType type, IPADDR4 address);
@@ -135,7 +136,7 @@ public:
      *
      * Retorno: Socket => Socket aceito e adicionado ao vetor de conexões
     */
-    Socket Accept();
+    SocketRef Accept();
 
     /**
      * Função que lê o pacote de dados recebido por meio do socket atual
@@ -155,9 +156,8 @@ public:
     */
     void Send(const SocketBuffer &data) const;
 
-
     //Operador funcional para comparação entre dois sockets
-    bool operator==(const Socket& other) const;
+    bool operator==(const Socket &other) const;
 };
 
 template <>
