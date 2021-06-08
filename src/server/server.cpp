@@ -21,12 +21,11 @@ using namespace tui::text_literals;
 using namespace std::chrono_literals;
 
 #include "socket.hpp"
-
 #include "server.hpp"
-
 #include "server_tui.hpp"
 
 #include <memory>
+#include <mutex>
 
 Server::Server(IPADDR4 address, int maxClients) : m_Socket(SocketType::TCP), m_Address(address), m_MaxClients(maxClients)
 {
@@ -193,7 +192,7 @@ void Server::ClientLoop(Socket clientSocket)
             
             std::this_thread::sleep_for(2s);
 
-            
+                        
             m_MessagesToSend.push_back(message);
         }
         catch (ConnectionClosedException &e)

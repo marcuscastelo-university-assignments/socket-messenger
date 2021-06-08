@@ -19,6 +19,7 @@ using namespace std::chrono_literals;
 #include "socket.hpp"
 #include "client_tui.hpp"
 #include "tui.hpp"
+
 using namespace tui::text_literals;
 
 int main(int argc, char const *argv[])

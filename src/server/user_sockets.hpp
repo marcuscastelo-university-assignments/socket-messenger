@@ -7,6 +7,8 @@
 #include <string>
 #include "socket.hpp"
 
+#include <mutex>
+
 /**
 	 * Estrutura criada para facilitar gerenciamento dos clientes
 	 * conectados em tempo de execução. Nela são contidas dois mapas
@@ -24,6 +26,7 @@ class UserSockets
     inline std::unordered_map<std::string, Socket>::iterator FindByNick(const std::string &nick) { return m_NickToSocket.find(nick); }
     inline std::unordered_map<Socket, std::string>::iterator FindBySocket(const Socket &socket) { return m_SocketToNick.find(socket); }
 
+	mutable std::mutex m_Mutex;
 public:
 	/**
 	 * Função que registra um usuário nos mapas

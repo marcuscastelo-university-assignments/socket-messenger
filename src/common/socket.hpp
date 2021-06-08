@@ -13,32 +13,8 @@
 #include <vector>
 #include <exception>
 
-//Define para facilitar print das mensagens de exception
-#define DEF_WHAT(msg) \
-    const char *what() const throw() { return #msg; }
-
-//Exceção caso a conexão falhe
-struct ConnectionFailedException : public std::exception
-{
-    DEF_WHAT("Connection Failed")
-};
-
-//Exceção caso a conexão seja encerrada abruptamente
-struct ConnectionClosedException : public std::exception
-{
-    DEF_WHAT("Connection Ended.")
-};
-
-//Exceção caso o Socket a ser utilizado esteja indisponível
-struct SocketBindException : public std::exception
-{
-    DEF_WHAT("Error while binding server.")
-};
-
-struct SocketAcceptException : public std::exception
-{
-    DEF_WHAT("Accept failed.")
-};
+#include "socket_exceptions.hpp"
+#include "message.hpp"
 
 //Estrutura auxiliar para armazenar o IP e a porta utilizadas
 struct IPADDR4
@@ -48,26 +24,6 @@ struct IPADDR4
     std::string ToString() const;
 };
 
-//Estrutura auxiliar para armazenar as informações do Socket
-struct SocketBuffer
-{
-    char *buf;
-    size_t len;
-    SocketBuffer(const void *_buf, size_t _len);
-    SocketBuffer(const SocketBuffer &other);
-
-    ~SocketBuffer();
-};
-
-//Estrutura auxiliar que armazena os dados da informação contida no socket
-struct Message
-{
-    std::string FromUser, ToUser, Content;
-    Message(const std::string &fromUser, const std::string &toUser, const std::string &content);
-    Message(const SocketBuffer &buf);
-    Message(const std::string &fromUser, const SocketBuffer &buf);
-    SocketBuffer ToBuffer() const;
-};
 
 //Operador que auxilia no cout(impressão) do IP
 std::ostream &operator<<(std::ostream &o, const IPADDR4 &ip);
