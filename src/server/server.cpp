@@ -28,6 +28,21 @@ using namespace std::chrono_literals;
 
 #include <memory>
 
+Server::Server(IPADDR4 address, int maxClients) : m_Socket(SocketType::TCP), m_Address(address), m_MaxClients(maxClients)
+{
+    m_CurrentTUI = new tui::ServerTUI(*this);
+
+    try
+    {
+        m_Socket.Bind(m_Address);
+    }
+    catch (SocketBindException &e)
+    {
+        tui::print(e.what()+"\n"_fred);
+        exit(-1);
+    }
+}
+
 /**
  * Função auxiliar que faz o parse para identificar o nome do cliente
  * 
@@ -52,11 +67,10 @@ void parseClientName(SocketBuffer *recBuf, char *&command, char *&nick)
 
 //TODO: ver se ta certo
 
-
 /**
  * Função auxiliar que registra o nick do usuário e seu socket correspondente impedindo repetições
  * 
- * Parâmetros:  const Socket &clientSocket	=>	Socket do  cliente
+ * Parâmetros:  const Socket &clientSocket	=>	Socket do  cliente 
  * 
  * Return: bool	=>	Caso o login seja bem sucedido - true
  * 					Se não, false
@@ -93,15 +107,16 @@ bool Server::LoginUser(const Socket &clientSocket)
 }
 
 /**
- * Função que permite a entrada de clientes, armazenando seus sockets e nicknames 
+ * Função que permite a entrada de clientes, armazenando seus sockets e nicknames e 
+ * inicializa o thread de recebimento de mensagens 
+ *
+ * Parâmetros: Nenhum
  * 
- * Parâmetros: nenhum
- * 
- * Return: void
+ * Return: Void
 */
 void Server::AcceptLoop()
 {
-    std::cout << "Aceitando clientes!" << std::endl;
+    m_CurrentTUI->Notify("Aguardando conexões de clientes..."_fgre);
     while (m_Running)
     {
         std::unique_ptr<Socket> clientSocket;
@@ -111,12 +126,13 @@ void Server::AcceptLoop()
         }
         catch (SocketAcceptException &e)
         {
-            //TODO: log
+            m_CurrentTUI->Notify("O servidor não mais aceita clientes!"_fmag);
             continue;
         }
         m_ConnectedSockets.push_back(*clientSocket);
 
-        NotifyTUI("Nova conexão: " + clientSocket->GetAddress().ToString());
+        m_CurrentTUI->Notify("Nova conexão: "_fgre + clientSocket->GetAddress().ToString());
+        std::this_thread::sleep_for(2s);
 
         //TODO: thread separada para evitar DoS com hanging auth
         try
@@ -132,16 +148,19 @@ void Server::AcceptLoop()
         }
         catch (ConnectionClosedException &e)
         {
+            m_CurrentTUI->Notify(tui::text::Text{e.what()}.FRed());
+            std::this_thread::sleep_for(5s);
             continue;
-            //TODO: log as debug message
         }
-        catch (std::runtime_error &e) {
-            m_CurrentTUI->Notify("Buffer recebido e enviado diferem!!");
+        catch (std::runtime_error &e)
+        {
+            m_CurrentTUI->Notify("Buffer recebido e enviado diferem!!"_fred + "\n\tDetalhes: " + e.what());
+            std::this_thread::sleep_for(5s);
         }
 
         auto &nickname = m_UserSockets.GetUserNick(*clientSocket);
 
-        NotifyTUI("Conexão autenticada com sucesso, " + clientSocket->GetAddress().ToString() + " agora é identificado como " + nickname);
+        m_CurrentTUI->Notify("Conexão autenticada com sucesso, "_fgre + tui::text::Text{clientSocket->GetAddress().ToString()}.FWhite() + " agora é identificado como "_fgre + tui::text::Text{nickname}.FYellow().Bold());
 
         std::thread *serverListenThread = new std::thread(std::bind(&Server::ClientLoop, this, *clientSocket));
         m_Threads.push_back(serverListenThread);
@@ -153,41 +172,48 @@ void Server::AcceptLoop()
     *
     * Parâmetros: Socket clientSocket  => possui as informações a serem armazenadas
     *
-    * Retorno: void
+    * Retorno: Void
  */
 void Server::ClientLoop(Socket clientSocket)
 {
     Socket &serverSocket = m_Socket;
 
-    std::cout << "Escutando mensagens de "
-              << clientSocket.GetAddress() << std::endl;
+    // std::cout << "Escutando mensagens de "
+    //           << clientSocket.GetAddress() << std::endl;
     while (m_Running)
     {
         try
         {
             if (!m_UserSockets.IsUserRegistered(clientSocket))
-            {
                 continue;
-            }
 
             auto &nickname = m_UserSockets.GetUserNick(clientSocket);
 
             SocketBuffer recBuf = clientSocket.Read();
             Message message(nickname, recBuf);
-            NotifyTUI(std::string("Mensagem recebida (nickname = " + nickname + "): from=") + message.FromUser + ", to=" + message.ToUser + ", content = \"" + message.Content + "\"");
-
+            m_CurrentTUI->Notify("Mensagem enfileirada: "_fwhi + tui::text::Text{nickname}.FYellow().Bold() + " -> "_fcya + tui::text::Text{message.ToUser}.FYellow().Bold() + " = \"" + message.Content + "\"");
+            //TODO: remover esta e outras linhas de sleep_for para notify (fazer um esquema de buffer de print)
+            std::this_thread::sleep_for(2s);
+            
             //TODO: change clientSocket for real destination
             m_MessagesToSend.push_back(message);
         }
         catch (ConnectionClosedException &e)
         {
-            std::cout << "Server message receiving socket has closed" << std::endl;
-            std::cout << "Reason: \t" << e.what() << std::endl;
+            m_CurrentTUI->Notify("Server message receiving socket has closed\n"_fred);
+            m_CurrentTUI->Notify(tui::text::Text{"Reason:\t"_t + e.what() + "\n"}.FRed());
             return;
         }
     }
 }
 
+/**
+ * Função que fecha os sockets de todos os clientes logados e o do proprio servidor
+ * 
+ * Parâmetros: Nenhum
+ * 
+ * Retorno: Void
+*/
 void Server::CloseAllSockets()
 {
     for (auto &socket : m_ConnectedSockets)
@@ -218,46 +244,41 @@ void Server::Start()
     m_Threads.push_back(forwardMessageThread);
 }
 
+/**
+ * Função que inicializa a TUI
+ * 
+ * Parâmetros: Nenhum
+ * 
+ * Retorno: Void
+*/
 void Server::EnterTUI()
 {
-    if (m_CurrentTUI != nullptr)
-        throw std::logic_error("Starting server TUI twice!");
-    m_CurrentTUI = new tui::ServerTUI(*this);
 
     tui::printl("Mudando para o modo interativo - Terminal User Interface (TUI)"_fgre);
     std::this_thread::sleep_for(900ms);
 
     m_CurrentTUI->Enter();
 }
-
-void Server::NotifyTUI(const std::string &notification)
-{
-    tui::savePos();
-    tui::pauseReadline();
-
-    tui::down(2);
-    tui::delLineR();
-    //TODO: notify TUI
-    tui::printl(notification);
-
-    tui::rbPos();
-    tui::unpauseReadline();
-}
-
 /**
- * Função que encerra o server, fechando os sockets e
- * finalizando as suas threads
+ * Função que encerra o server e a TUI
  * 
- * Parâmetros:	ServerInfor &server	=>	Servidor a ser fechado
+ * Parâmetros: Nenhum
  * 
- * Retorno: void
+ * Retorno: Void
 */
 void Server::RequestStop()
 {
     RequestStopSlave();
     RequestStopTUI();
 }
-
+/**
+ * Função que fecha todos os sockets, bloqueia todos os threads 
+ * e para os as funções de loop 
+ *
+ * Parâmetros: Nenhum
+ * 
+ * Retorno: Void
+*/
 void Server::RequestStopSlave()
 {
     m_Running = false;
@@ -267,6 +288,13 @@ void Server::RequestStopSlave()
     m_AcceptThread->join();
 }
 
+/**
+ * Função que encerra a TUI
+ * 
+ * Parâmetros: Nenhum
+ * 
+ * Retorno: Void
+*/
 void Server::RequestStopTUI()
 {
     if (m_CurrentTUI != nullptr)
@@ -276,9 +304,9 @@ void Server::RequestStopTUI()
 /**
     * Função responsável por reenviar a mensagem recebida do cliente para o cliente alvo
     *
-    * Parâmetros: Server &server => possui as mensagens a serem reenviadas
+    * Parâmetros: Nenhum
     *
-    * Retorno: void
+    * Retorno: Void
 */
 void Server::ForwardMessageLoop()
 {
@@ -303,7 +331,7 @@ void Server::ForwardMessageLoop()
             }
 
             auto &destSocket = m_UserSockets.GetUserSocket(destUser);
-            NotifyTUI(std::string("Enviando mensagem: ") + message.Content + " para " + message.ToUser);
+            m_CurrentTUI->Notify("Enviando mensagem:"_fwhi +  tui::text::Text{" \"" + message.Content + "\""}.FCyan() + " de " + tui::text::Text{message.FromUser}.FYellow().Bold() +" para " + tui::text::Text{message.ToUser}.FYellow().Bold());
 
             //TODO: remove
             std::this_thread::sleep_for(1s);
@@ -313,13 +341,13 @@ void Server::ForwardMessageLoop()
             }
             catch (ConnectionClosedException &e)
             {
-                std::cout << "Server message resent socket has closed" << std::endl;
-                std::cout << "Reason: \t" << e.what() << std::endl;
+                m_CurrentTUI->Notify("Server message resent socket has closed\n"_fred);
+                m_CurrentTUI->Notify(tui::text::Text{"Reason: \t"_t + e.what() + "\n"}.FRed());
                 return;
             }
             catch (std::exception &e)
             {
-                std::cout << "Unexpected exception: \t" << e.what() << std::endl;
+                m_CurrentTUI->Notify(tui::text::Text{"Unexpected exception: \t"_t + e.what()}.FRed());
                 return;
             }
         }
@@ -344,4 +372,6 @@ Server::~Server()
     delete m_AcceptThread;
     m_Threads.clear();
     m_AcceptThread = nullptr;
+
+    delete m_CurrentTUI;
 }

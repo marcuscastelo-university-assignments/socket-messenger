@@ -17,7 +17,7 @@ namespace tui
 //Classe auxiliar que armazena informações essenciais para o server
 class Server
 {
-	/**
+    /**
 	 * O servidor armazena o seu IP e portas, Socket e
 	 * a quantidade de clientes conectados a ele
 	 * 
@@ -88,27 +88,13 @@ class Server
     void CloseAllSockets();
 
 public:
-    Server(IPADDR4 address, int maxClients) : m_Socket(SocketType::TCP), m_Address(address), m_MaxClients(maxClients)
-    {
-        try
-        {
-            m_Socket.Bind(m_Address);
-        }
-        catch (SocketBindException &e)
-        {
-            std::cerr << e.what() << std::endl;
-            exit(-1);
-        }
-    }
+    Server(IPADDR4 address, int maxClients);
 
     void Start();
-
 
     void EnterTUI();
 
     inline bool IsRunning() { return m_Running; }
-
-    void NotifyTUI(const std::string &notification);
 
     /**
     * Função que encerra o server, fechando os sockets e

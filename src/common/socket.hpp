@@ -30,7 +30,7 @@ struct ConnectionClosedException : public std::exception
 //Exceção caso o Socket a ser utilizado esteja indisponível
 struct SocketBindException : public std::exception
 {
-    DEF_WHAT("Error on binding server.")
+    DEF_WHAT("Error while binding server.")
 };
 
 struct SocketAcceptException : public std::exception

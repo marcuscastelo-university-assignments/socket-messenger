@@ -22,7 +22,6 @@ namespace tui
             tui::paint(1 + headerMarginX, headerStartY, screenSize.first - headerMarginX, headerStartY + headerLenY - 1, text::TextColorB::Black);
 
             cursor(4, headerStartY + 1);
-            //TODO: fix color bug
             std::cout << "Logado como: "_bbla << Text{m_Client.GetNickname().c_str()}.BBlack().Bold();
 
             cursor(4, headerStartY + 3);

@@ -40,7 +40,8 @@ namespace tui
             cursor(0, headerStartY + headerLenY + 2);
             tui::print(tui::text::Text{"> "_fgre});
             std::string command = tui::readline();
-            if (command == "exit") {
+            if (command == "exit")
+            {
                 tui::printl("Exiting..."_fblu);
                 m_Server.RequestStop();
             }
@@ -54,15 +55,21 @@ namespace tui
         tui::rbPos();
     }
 
-    void ServerTUI::Notify(const std::string &notification) {
+    void ServerTUI::Notify(const std::string &notification)
+    {
         tui::pauseReadline();
         tui::savePos();
 
-        tui::downs(2);
+        tui::downs(4);
+        tui::delLineR();
+        tui::up();
+        tui::delLineR();
+        tui::up();
         tui::delLineR();
         tui::print(notification);
 
         tui::rbPos();
         tui::unpauseReadline();
+        fflush(stdout);
     }
 }
