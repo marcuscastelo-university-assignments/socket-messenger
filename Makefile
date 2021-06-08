@@ -52,6 +52,7 @@ ifeq (run, $(filter run,$(MAKECMDGOALS)))
 .PHONY: $(RULES)
 $(RULES):
 	@./bin/$@
+	stty sane
 endif
 
 # Inform which objects are used by each binary
