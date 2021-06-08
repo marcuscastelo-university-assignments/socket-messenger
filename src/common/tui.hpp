@@ -229,6 +229,9 @@ namespace tui
     std::pair<int,int> getSize();
 
     std::string readline();
+    void pauseReadline();
+    void unpauseReadline();
+    int getTypedCharacterCount();
 
     void paint(int xs, int ys, int xe, int ye, text::TextColorB bg);
 }

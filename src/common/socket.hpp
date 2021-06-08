@@ -107,6 +107,23 @@ public:
 
     //Construtor do tipo copy-constructor, permite clonar um Socket (só clona o objeto, o FD (File Descriptor) é o mesmo)
     Socket(const Socket& other) = default;
+    Socket(const Socket&& other) {
+        m_SocketFD = other.m_SocketFD;
+        m_Type = other.m_Type;
+        m_Address = other.m_Address;
+        m_NativeAddress = other.m_NativeAddress;
+        m_AcceptedSockets = std::move(other.m_AcceptedSockets);
+    }
+    
+    //TODO: comentar (usado no UserSockets)
+    Socket &operator=(const Socket& other) {
+        m_SocketFD = other.m_SocketFD;
+        m_Type = other.m_Type;
+        m_Address = other.m_Address;
+        m_NativeAddress = other.m_NativeAddress;
+        m_AcceptedSockets = other.m_AcceptedSockets;
+        return *this;
+    }
 
     //Construtor da classe Socket, que retorna um socket com o valor passado
     Socket(int socketFD, SocketType type, IPADDR4 address);

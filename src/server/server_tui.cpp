@@ -8,6 +8,7 @@ namespace tui
 
     void ServerTUI::Enter()
     {
+        m_Running = true;
         tui::savePos();
         tui::saveScreen();
         tui::clear();
@@ -20,7 +21,7 @@ namespace tui
 
         cursor(4, headerStartY + 1);
         std::cout << "Status: "_bbla
-                  << (m_Server.running ? "Online"_fgre : "Offline"_fred).BBlack().Bold();
+                  << (m_Server.IsRunning() ? "Online"_fgre : "Offline"_fred).BBlack().Bold();
 
         cursor(4, headerStartY + 3);
         std::cout << "Usuários conectados ("_fwhi.BBlack() << "3"_fyel.BBlack() << "): "_fwhi.BBlack();
@@ -29,7 +30,7 @@ namespace tui
         cursor(4, headerStartY + 5);
         std::cout << "Última mensagem enviada: ("_bbla.FWhite() << "dalton"_bbla.FYellow().Bold() << "->"_bbla.FCyan() << "marucs"_bbla.FYellow().Bold() << "): "_bbla.FWhite() << "\"Eae brow\""_bbla.FBlue();
 
-        while (true)
+        while (m_Running)
         {
             cursor(0, headerStartY + headerLenY + 1);
             tui::creset();
@@ -37,8 +38,10 @@ namespace tui
             cursor(0, headerStartY + headerLenY + 1);
             tui::print(tui::text::Text{"> "_fgre});
             std::string command = tui::readline();
-            if (command == "exit")
-                break;
+            if (command == "exit") {
+                tui::printl("Exiting..."_fblu);
+                m_Server.RequestStop();
+            }
             if (command == "stop")
             {
                 tui::printl("Solicitando a parada do servidor"_fyel);

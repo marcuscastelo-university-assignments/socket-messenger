@@ -36,7 +36,6 @@ public:
 
     void RequestExit();
 
-    //TODO: check if properly stopped
     virtual ~Client();
 };
 

@@ -30,7 +30,7 @@ void Client::ConnectAndLogin(const IPADDR4 &serverAddr, const std::string &nickn
     m_Nickname = nickname;
 
     bool success = false;
-    for (size_t trial = 0; maxTrials == 0 || trial < maxTrials; trial++)
+    for (size_t trial = 1; maxTrials == 0 || trial <= maxTrials; trial++)
     {
         try
         {
@@ -40,6 +40,7 @@ void Client::ConnectAndLogin(const IPADDR4 &serverAddr, const std::string &nickn
         }
         catch (ConnectionFailedException &e)
         {
+            std::this_thread::sleep_for(2.5s);
             tui::print(tui::text::Text("Unable to connect to " + serverAddr.ToString() + " Trial " + std::to_string(trial) + " of " + std::to_string(maxTrials) + ". \nReason:\t ").FRed());
             std::cerr << e.what() << std::endl;
         }
@@ -80,16 +81,16 @@ void Client::Start()
 void Client::ServerSlaveLoop()
 {
     std::this_thread::sleep_for(1s);
-    while (!IsExiting())
+    while (!m_Exiting)
     {
         try
         {
             SocketBuffer data = m_Socket.Read();
-            printf("<< Mensagem recebida: \"%s\"\n", (char *)data.buf);
+            m_CurrentTUI->Notify(data.buf);
         }
         catch (ConnectionClosedException &e)
         {
-            tui::printl("Error reading server data."_fred);
+            tui::printl("Error reading server data, connection closed."_fred);
             //TODO: print errno message
             RequestExit();
         }
@@ -115,8 +116,11 @@ void Client::RequestExit()
     CloseSockets();
     if (m_CurrentTUI != nullptr)
         m_CurrentTUI->RequestExit();
+    
+    m_ServerSlaveThread->join();
 }
 
+//TODO: check if properly stopped
 Client::~Client()
 {
     delete m_CurrentTUI;

@@ -1,7 +1,21 @@
 #include "tui.hpp"
+#if defined(WIN32) //Winows
+
+#error Windows is not Supported
+
+#else //Unix
+
+//Usado para fechamento de sockets
+#include <unistd.h>
+
+#endif
 
 #include <regex>
 #include <sstream>
+#include <thread>
+#include <termios.h>
+#include <chrono>
+using namespace std::chrono_literals;
 
 namespace tui
 {
@@ -110,12 +124,91 @@ namespace tui
         return {size.ws_col, size.ws_row};
     }
 
+    static bool ___reading_line = false;
+    static int ___current_input_pos = 0;
+    static bool ___reading_line_paused = false;
+
     std::string readline()
     {
-        std::string s;
-        std::getline(std::cin, s);
-        return s;
+        static struct termios oldt, newt;
+        tcgetattr(STDIN_FILENO, &oldt);
+        newt = oldt;
+
+        newt.c_lflag &= ~(ICANON);
+        newt.c_lflag &= ~ECHO;
+        tcsetattr(STDIN_FILENO, TCSANOW, &newt);
+
+
+        std::stringstream ss;
+        ___reading_line = true;
+
+        char c;
+        while (true)
+        {
+            ___current_input_pos = std::max(0, ___current_input_pos);
+            if (!___reading_line_paused)
+            {
+                c = getchar();
+                fflush(stdin);
+                
+                if (c == 127) {
+                    if (___current_input_pos == 0) continue;
+                    //TODO: change ss to char[]?
+                    //FIXME: backspace not working in ss
+                    ss.seekp(-1, std::ios_base::end);
+                    ss << "\0";
+                    ss.seekp(-1, std::ios_base::end);
+                    ___current_input_pos--;
+                    left(1);
+                    print(" ");
+                    fflush(stdout);
+                    left(1);
+                    continue;
+                }
+
+                if (c == '\033') {
+                    if (getchar() != '[') continue;
+                    char dir = getchar();
+                    if (dir == 'D') ___current_input_pos--;
+                    if (dir == 'E') ___current_input_pos++;
+                    continue;
+                }
+
+                putchar(c);
+                fflush(stdout);
+                if (c == '\n')
+                {
+                    ___reading_line = false;
+                    ___current_input_pos = 0;
+                    ___reading_line_paused = false;
+                    break;
+                }
+                ss << c;
+                ___current_input_pos++;
+            }
+            else
+                std::this_thread::sleep_for(10ms);
+        }
+
+        /*restore the old settings*/
+        tcsetattr(STDIN_FILENO, TCSANOW, &oldt);
+
+        return ss.str();
     }
+
+    void pauseReadline()
+    {
+        if (___reading_line)
+            ___reading_line_paused = true;
+    }
+
+    void unpauseReadline()
+    {
+        if (___reading_line)
+            ___reading_line_paused = false;
+    }
+
+    int getTypedCharacterCount() { return ___current_input_pos; }
 
     void paint(int xs, int ys, int xe, int ye, text::TextColorB bg)
     {
@@ -142,9 +235,6 @@ namespace tui::text
     //     std::stringstream ss;
     //     ss << "\033[";
     // }
-
-
-
 
     std::string createReset() { return "\033[0;0m"; }
     std::string createColorString(int colorCode) { return std::to_string(colorCode); }
