@@ -175,9 +175,14 @@ public:
      */
     inline void Kick(const Socket &clientSocket)
     {
-        clientSocket.Send({"bye", 4});
-        std::this_thread::sleep_for(2s);
-        clientSocket.Shutdown();
+        OnSocketClosed(clientSocket);
+        
+        std::thread temp([&clientSocket]() {
+            clientSocket.Send({"bye", 4});
+            std::this_thread::sleep_for(2s);
+            clientSocket.Shutdown();
+        });
+        temp.detach();
     }
 
     inline bool IsRunning() { return m_Running; }

@@ -211,8 +211,14 @@ void Server::ClientLoop(Socket clientSocket)
 
 void Server::CloseAllSockets()
 {
-    for (auto &socket : m_ConnectedSockets)
+
+    while (!m_ConnectedSockets.empty()) {
+        auto &socket = m_ConnectedSockets.back();
+        m_ConnectedSockets.pop_back();
         Kick(socket);
+    }
+
+    std::this_thread::sleep_for(4s);
 
     m_ConnectedSockets.clear();
 
@@ -239,8 +245,18 @@ void Server::OnClientCountChanged()
 
     for (const Socket &clientSocket : m_ConnectedSockets)
     {
-        //FIXME: native address is 0 here, why?
-        clientSocket.Send({payload.c_str(), payload.length() + 1});
+        std::thread tmp([&clientSocket, payload]()
+                        {
+                            //FIXME: native address is 0 here, why?
+                            try
+                            {
+                                clientSocket.Send({payload.c_str(), payload.length() + 1});
+                            }
+                            catch (const std::exception &e)
+                            {
+                            }
+                        });
+        tmp.detach();
     }
 
     if (m_CurrentTUI != nullptr)

@@ -97,21 +97,21 @@ void Socket::Shutdown() const
 {
     int true_ = 1;
 
-//     for (int acceptedFD : m_AcceptedSockets)
-//     {
-//         true_ = 1;
-//         setsockopt(acceptedFD, SOL_SOCKET, SO_REUSEADDR, &true_, sizeof(int));
-// #ifdef SO_REUSEPORT
-//         setsockopt(acceptedFD, SOL_SOCKET, SO_REUSEPORT, &true_, sizeof(int));
-// #endif
-//         shutdown(acceptedFD, SHUT_RDWR);
-//     }
+    //     for (int acceptedFD : m_AcceptedSockets)
+    //     {
+    //         true_ = 1;
+    //         setsockopt(acceptedFD, SOL_SOCKET, SO_REUSEADDR, &true_, sizeof(int));
+    // #ifdef SO_REUSEPORT
+    //         setsockopt(acceptedFD, SOL_SOCKET, SO_REUSEPORT, &true_, sizeof(int));
+    // #endif
+    //         shutdown(acceptedFD, SHUT_RDWR);
+    //     }
 
-//     true_ = 1;
-//     setsockopt(m_SocketFD, SOL_SOCKET, SO_REUSEADDR, &true_, sizeof(int));
-// #ifdef SO_REUSEPORT
-//     setsockopt(m_SocketFD, SOL_SOCKET, SO_REUSEPORT, &true_, sizeof(int));
-// #endif
+    //     true_ = 1;
+    //     setsockopt(m_SocketFD, SOL_SOCKET, SO_REUSEADDR, &true_, sizeof(int));
+    // #ifdef SO_REUSEPORT
+    //     setsockopt(m_SocketFD, SOL_SOCKET, SO_REUSEPORT, &true_, sizeof(int));
+    // #endif
     shutdown(m_SocketFD, SHUT_RDWR);
 }
 
@@ -154,17 +154,22 @@ SocketBuffer Socket::Read(int bufferMaxSize) const
 
 void Socket::Send(const SocketBuffer &data) const
 {
-    ssize_t sentByteCount = send(m_SocketFD, data.buf, data.len, 0);
-
-    if (sentByteCount == -1)
+    try
     {
-        throw ConnectionClosedException();
+        ssize_t sentByteCount = send(m_SocketFD, data.buf, data.len, 0);
+        if (sentByteCount <= -1)
+        {
+            throw ConnectionClosedException();
+        }
+
+        if ((size_t)sentByteCount != data.len)
+        {
+            //TODO: verificar se isso é uma preoucupação
+            throw std::runtime_error("sent != data.len");
+        }
     }
-
-    if ((size_t)sentByteCount != data.len)
+    catch (std::exception &e)
     {
-        //TODO: verificar se isso é uma preoucupação
-        throw std::runtime_error("sent != data.len");
     }
 }
 
