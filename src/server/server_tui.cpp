@@ -53,7 +53,7 @@ namespace tui
         {
             if (i % maxLetter == 0)
             {
-                //TODO: fazer linha quebrar linha direito
+                
                 motd.insert(i - 1, "\n");
             }
         }

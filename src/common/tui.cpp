@@ -273,7 +273,7 @@ namespace tui::text
             if (std::regex_match(content, std::regex("\033\\[;[]7[;m]")))
                 Style.decoration |= TextDecoration::Inversed;
 
-            //TODO: color match
+            
         }
 
         ApplyStyle();

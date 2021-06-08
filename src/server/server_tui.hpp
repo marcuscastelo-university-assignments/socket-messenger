@@ -14,7 +14,7 @@ namespace tui
     {
         Server &m_Server;
 
-		//TODO: verificar edge-cases (destructor chamado sem stop, etc.)
+		
 		//Verificação se está ativo
         bool m_Running = false;
 

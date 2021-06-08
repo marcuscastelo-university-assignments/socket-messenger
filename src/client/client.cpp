@@ -69,7 +69,7 @@ void Client::ConnectAndLogin(const IPADDR4 &serverAddr, const std::string &nickn
 
 void Client::Start()
 {
-    //TODO: mutex para exiting
+    
     if (!m_Exiting)
     {
         m_ServerSlaveThread = new std::thread(std::bind(&Client::ServerSlaveLoop, this));
@@ -101,7 +101,7 @@ void Client::ServerSlaveLoop()
                 m_CurrentTUI->Notify("<<<"_fcya + " (" + Text{receivedMessage.FromUser}.FYellow().Bold() + "): " + receivedMessage.Content);
             }
             else if (strncmp(data.buf, "online=", 7) == 0) {
-                //TODO: deixar mais bonito
+                
                 m_CurrentTUI->SetOnline(data.buf+7);
             }
             else
@@ -112,9 +112,9 @@ void Client::ServerSlaveLoop()
         catch (ConnectionClosedException &e)
         {
             m_Socket.Shutdown();
-            //TODO: fechar stdin?
+            
             tui::printl("Error reading server data, connection closed."_fred);
-            //TODO: print errno message
+            
             RequestExit();
             return;
         }
@@ -146,7 +146,7 @@ void Client::RequestExit()
         m_ServerSlaveThread->detach();
 }
 
-//TODO: check if properly stopped
+
 Client::~Client()
 {
     delete m_CurrentTUI;

@@ -164,7 +164,7 @@ void Socket::Send(const SocketBuffer &data) const
 
         if ((size_t)sentByteCount != data.len)
         {
-            //TODO: verificar se isso é uma preoucupação
+            
             throw std::runtime_error("sent != data.len");
         }
     }
@@ -222,7 +222,7 @@ Message::Message(const SocketBuffer &sd)
 
 Message::Message(const std::string &fromUser, const SocketBuffer &sd) : Message::Message(sd)
 {
-    //TODO: tratar melhor
+    
     if (FromUser != fromUser)
     {
         std::cerr << "Impersonation detected!" << std::endl;

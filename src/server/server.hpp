@@ -94,7 +94,7 @@ class Server
     */
     void CloseAllSockets();
 
-    //TODO: comentar
+    
     void OnClientCountChanged();
 
 public:
@@ -102,7 +102,7 @@ public:
 
     inline UserSockets &GetUserSockets() { return m_UserSockets; }
 
-    //TODO: comentar
+    
     void OnSocketClosed(const Socket &closedSocket);
 
     /**
@@ -172,6 +172,6 @@ public:
 
     inline bool IsRunning() { return m_Running; }
 
-    //TODO: delete threads, tui, etc.
+    
     virtual ~Server();
 };
