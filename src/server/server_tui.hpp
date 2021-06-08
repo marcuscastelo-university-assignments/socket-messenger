@@ -16,6 +16,7 @@ namespace tui
 
         bool m_Running = false;
 
+		
     public:
 		//Construtor da classe ServerTUI
         ServerTUI(Server &server) : m_Server(server) {}
