@@ -200,7 +200,7 @@ public:
     void Send(const SocketBuffer &data) const;
 
 
-    //TODO: comentar
+    //Operador funcional para comparação entre dois sockets
     bool operator==(const Socket& other) const;
 };
 
