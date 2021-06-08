@@ -94,7 +94,13 @@ class Server
     */
     void CloseAllSockets();
 
-    //TODO: comentar
+    /**
+    * Função que atualiza a lista de clientes conectados ao server e as manda para todos os clientes
+    * 
+    * Parâmetros: Nenhum
+    * 
+    * Retorno: Void
+    */
     void OnClientCountChanged();
 
 public:
@@ -102,7 +108,14 @@ public:
 
     inline UserSockets &GetUserSockets() { return m_UserSockets; }
 
-    //TODO: comentar
+    /**
+    * Função que identifica o socket desconectado e o remove da lista de clientes conectados
+    * após isso chama onClientChanged para atualizar os headers dos clientes
+    * 
+    * Parâmetros: Nenhum
+    * 
+    * Retorno: Void
+    */
     void OnSocketClosed(const Socket &closedSocket);
 
     /**
@@ -153,10 +166,12 @@ public:
     void RequestStopTUI();
 
     /**
-     * Função que kicka um usuário do servidor
+     * Função que kicka um usuário do servidor inicialmente espera a boa vontade do cliente em se desconectar. 
+     * Após 2 segundos, força a desconexão
      * 
-     * Inicialmente espera a boa vontade do cliente em se desconectar. Após 2 segundos, força a desconexão
-     *
+     * Parâmetros: Nenhum
+     * 
+     * Retorno: Void
      */
     inline void Kick(const Socket &clientSocket)
     {
@@ -172,6 +187,14 @@ public:
 
     inline bool IsRunning() { return m_Running; }
 
-    //TODO: delete threads, tui, etc.
+
+     /**
+     * Função que encera o servidor caso este esteja online e deleta sua TUI
+     * 
+     * Parâmetros: Nenhum
+     * 
+     * Retorno: Void
+     */
     virtual ~Server();
+    //TODO: delete threads, tui, etc.
 };
