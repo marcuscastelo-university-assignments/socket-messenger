@@ -40,7 +40,6 @@ namespace tui
 		//Método que retorna se a TUI está em execução
         inline bool IsRunning() { return m_Running; }
 
-
 		//Método que solicita o encerramento da TUI (geralmente chamado a partir de outra thread)
         inline void RequestStop() { m_Running = false; }
 

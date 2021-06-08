@@ -10,6 +10,9 @@
 #include <unordered_map>
 #include <iostream>
 
+#include <chrono>
+using namespace std::chrono_literals;
+
 namespace tui
 {
     class ServerTUI;
@@ -44,7 +47,6 @@ class Server
 
     UserSockets m_UserSockets;
 
-
     /**
     * Função auxiliar que registra o nick do usuário e seu socket correspondente impedindo repetições
     * 
@@ -55,8 +57,7 @@ class Server
     */
     bool LoginUser(const Socket &clientSocket);
 
-
-   /**
+    /**
     * Função responsavel pela entrada de clientes, armazenando seus sockets e nicknames e 
     * inicializa o thread de recebimento de mensagens 
     *
@@ -65,7 +66,6 @@ class Server
     * Return: Void
     */
     void AcceptLoop();
-
 
     /**
     * Função responsável por receber e armazenar mensagens enviadas pelo cliente 
@@ -76,7 +76,6 @@ class Server
     */
     void ClientLoop(Socket clientSocket);
 
-
     /**
     * Função responsável por reenviar a mensagem recebida do cliente para o cliente alvo
     *
@@ -86,7 +85,7 @@ class Server
     */
     void ForwardMessageLoop();
 
-   /**
+    /**
     * Função que fecha os sockets de todos os clientes registrados e o do proprio servidor
     * 
     * Parâmetros: Nenhum
@@ -95,13 +94,16 @@ class Server
     */
     void CloseAllSockets();
 
-
-    //TODO: comentar 
+    //TODO: comentar
     void OnClientCountChanged();
 
 public:
     Server(IPADDR4 address, int maxClients);
 
+    inline UserSockets &GetUserSockets() { return m_UserSockets; }
+
+    //TODO: comentar
+    void OnSocketClosed(const Socket &closedSocket);
 
     /**
     * Função responsável por iniciar o servidor inicializando as threads necessárias para 
@@ -113,7 +115,6 @@ public:
     */
     void Start();
 
-
     /**
     * Função que inicializa a TUI
     * 
@@ -122,7 +123,6 @@ public:
     * Retorno: Void
     */
     void EnterTUI();
-
 
     /**
     * Função que encerra o server, fechando os sockets e
@@ -143,7 +143,6 @@ public:
     */
     void RequestStopSlave();
 
-
     /**
     * Função que encerra a TUI
     * 
@@ -152,6 +151,19 @@ public:
     * Retorno: Void
     */
     void RequestStopTUI();
+
+    /**
+     * Função que kicka um usuário do servidor
+     * 
+     * Inicialmente espera a boa vontade do cliente em se desconectar. Após 2 segundos, força a desconexão
+     *
+     */
+    inline void Kick(const Socket &clientSocket)
+    {
+        clientSocket.Send({"bye", 4});
+        std::this_thread::sleep_for(2s);
+        clientSocket.Shutdown();
+    }
 
     inline bool IsRunning() { return m_Running; }
 

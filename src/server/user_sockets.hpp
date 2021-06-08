@@ -67,6 +67,6 @@ public:
 	 * Retorno: const std::string	=>	Nome do usuário (busca pelo socket)
 	 * 			const Socket		=>	Socket do usuário (busca pelo nome)
 	*/
-    const std::string &GetUserNick(const Socket &userSocket);
-    const Socket &GetUserSocket(const std::string &nickname);
+    const std::string &GetUserNick(const Socket &userSocket) const;
+    const Socket &GetUserSocket(const std::string &nickname) const;
 };

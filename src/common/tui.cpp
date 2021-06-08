@@ -215,7 +215,7 @@ namespace tui
     
     void cancelReadline()
     {
-
+        close(STDIN_FILENO);
     }
 
     void paint(int xs, int ys, int xe, int ye, text::TextColorB bg)

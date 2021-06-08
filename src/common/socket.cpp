@@ -93,19 +93,25 @@ void Socket::Listen(int maxConnections)
         throw 13;
 }
 
-void Socket::Close()
+void Socket::Shutdown() const
 {
     int true_ = 1;
 
-    for (int acceptedFD : m_AcceptedSockets)
-    {
-        true_ = 1;
-        setsockopt(acceptedFD, SOL_SOCKET, SO_REUSEADDR, &true_, sizeof(int));
-        shutdown(acceptedFD, SHUT_RDWR);
-    }
+//     for (int acceptedFD : m_AcceptedSockets)
+//     {
+//         true_ = 1;
+//         setsockopt(acceptedFD, SOL_SOCKET, SO_REUSEADDR, &true_, sizeof(int));
+// #ifdef SO_REUSEPORT
+//         setsockopt(acceptedFD, SOL_SOCKET, SO_REUSEPORT, &true_, sizeof(int));
+// #endif
+//         shutdown(acceptedFD, SHUT_RDWR);
+//     }
 
-    true_ = 1;
-    setsockopt(m_SocketFD, SOL_SOCKET, SO_REUSEADDR, &true_, sizeof(int));
+//     true_ = 1;
+//     setsockopt(m_SocketFD, SOL_SOCKET, SO_REUSEADDR, &true_, sizeof(int));
+// #ifdef SO_REUSEPORT
+//     setsockopt(m_SocketFD, SOL_SOCKET, SO_REUSEPORT, &true_, sizeof(int));
+// #endif
     shutdown(m_SocketFD, SHUT_RDWR);
 }
 

@@ -87,6 +87,12 @@ void Client::ServerSlaveLoop()
         {
             SocketBuffer data = m_Socket.Read();
 
+            if (strncmp(data.buf, "bye", 3) == 0) {
+                m_CurrentTUI->Notify("*** O Servidor te expulsou! ***"_fmag.Bold());
+                RequestExit();
+                return;
+            }
+
             int compare = strncmp(data.buf, "msg=", 4 * sizeof(char));
             if (compare == 0)
             {
@@ -105,9 +111,12 @@ void Client::ServerSlaveLoop()
         }
         catch (ConnectionClosedException &e)
         {
+            m_Socket.Shutdown();
+            //TODO: fechar stdin?
             tui::printl("Error reading server data, connection closed."_fred);
             //TODO: print errno message
             RequestExit();
+            return;
         }
     }
 }

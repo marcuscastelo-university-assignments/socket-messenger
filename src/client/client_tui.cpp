@@ -56,7 +56,7 @@ namespace tui
         std::cout << motd.BBlack() << std::endl;
 
         downs(2);
-        tui::print("Digite help para obter ajuda"_fblu);
+        tui::print("  Digite help para obter ajuda"_fblu);
 
         tui::unpauseReadline();
         tui::rbPos();
@@ -164,6 +164,7 @@ namespace tui
     void ClientTUI::RequestExit()
     {
         m_Running = false;
+        tui::cancelReadline();
         //TODO: close stdin?
     }
 

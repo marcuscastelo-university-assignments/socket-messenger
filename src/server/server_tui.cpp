@@ -53,6 +53,7 @@ namespace tui
         {
             if (i % maxLetter == 0)
             {
+                //TODO: fazer linha quebrar linha direito
                 motd.insert(i - 1, "\n");
             }
         }
@@ -61,7 +62,7 @@ namespace tui
         std::cout << motd.BBlack() << std::endl;
 
         downs(2);
-        tui::print("Digite help para obter ajuda"_fblu);
+        tui::print("  Digite help para obter ajuda"_fblu);
 
         tui::unpauseReadline();
         tui::rbPos();
@@ -86,7 +87,6 @@ namespace tui
         tui::savePos();
         tui::saveScreen();
         tui::clear();
-        auto screenSize = getSize();
 
         printl("  Zaplan (Server) v0.1"_fgre.Bold());
         UpdateHeader();
@@ -99,14 +99,15 @@ namespace tui
             cursor(0, headerStartY + headerLenY + 2);
             tui::print(tui::text::Text{"> "_fgre});
             std::string command = tui::readline();
-            if (command == "exit")
+            if (command.size() == 0) continue;
+            else if (command == "exit")
             {
                 tui::printl("Exiting..."_fblu);
                 m_Server.RequestStop();
             }
             else if (command == "stop") {
                 if (!m_Server.IsRunning()) {
-                    Notify("O Servidor não em execução! ignorando comando"_fyel);
+                    Notify("O Servidor não está em execução! ignorando comando"_fyel);
                     continue;
                 }
                 tui::printl("Stopping..."_fblu);
@@ -122,12 +123,32 @@ namespace tui
                 m_Server.Start();
                 UpdateHeader();
             }
+            else if (command.substr(0,4)== "kick") {
+                if (command.size() < 6) {
+                    Notify("Erro de syntaxe."_fred + " uso correto: \n\tkick <nickname>");
+                    continue;
+                }
+
+                std::string nickname = command.substr(5);
+                if (!m_Server.GetUserSockets().IsUserRegistered(nickname)) {
+                    Notify("User "_fred + Text{nickname}.FYellow().Bold() + " doesn't exist"_fred);
+                    continue;
+                }
+
+                const Socket &userSocket = m_Server.GetUserSockets().GetUserSocket(nickname);
+
+                m_Server.Kick(userSocket);
+
+                m_Server.OnSocketClosed(userSocket);
+
+            }
             else if (command == "help")
             {
                 const static std::string commandsHelp[] = {
-                    "  * " + "help"_fcya + "  -  " + "Exibe esta tela"_fwhi,
-                    "  * " + "start"_fcya + "  -  " + "Liga o servidor"_fwhi,
-                    "  * " + "stop"_fcya + "  -  " + "Desliga o servidor"_fwhi,
+                    "  * " + "help"_fcya + "             -  " + "Exibe esta tela"_fwhi,
+                    "  * " + "start"_fcya + "             -  " + "Liga o servidor"_fwhi,
+                    "  * " + "stop"_fcya + "            -  " + "Desliga o servidor"_fwhi,
+                    "  * " + "kick <nickname>"_fcya + "  -  " + "Desconecta o usuário"_fwhi,
                     "  * " + "exit"_fcya + "  -  " + "Desconecta todos os clientes e encerra a aplicação por completo"_fwhi};
 
                 std::stringstream ss;
@@ -141,6 +162,10 @@ namespace tui
                 delLineR();
                 print(ss.str());
                 tui::readline(1);
+            }
+            else {
+                Notify("Commando inválido: " + command);
+                continue;
             }
         }
 

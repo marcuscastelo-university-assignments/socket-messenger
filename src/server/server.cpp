@@ -110,7 +110,7 @@ void Server::AcceptLoop()
         }
         catch (SocketAcceptException &e)
         {
-            const static std::string text = "O servidor não mais aceita clientes!"_fmag; 
+            const static std::string text = "O servidor não mais aceita clientes!"_fmag;
 
             //Se o usuário terminou o programa com SIGNIT, talvez a TUI não exista mais,
             //Mas o commando "stop" permite que o servidor seja encerrado sem fechar a TUI. Nesse caso, é preferido que o método Notify seja usado
@@ -160,6 +160,20 @@ void Server::AcceptLoop()
     }
 }
 
+void Server::OnSocketClosed(const Socket &closedSocket)
+{
+    //TODO: parar de usar for, usar uma classe apropriada, eventos etc... coisa pra daqui a um mes.
+    size_t pos;
+    for (pos = 0; pos < m_ConnectedSockets.size(); pos++)
+        if (m_ConnectedSockets[pos] == closedSocket)
+            break;
+
+    if (pos < m_ConnectedSockets.size())
+        m_ConnectedSockets.erase(m_ConnectedSockets.begin() + pos);
+
+    OnClientCountChanged();
+}
+
 void Server::ClientLoop(Socket clientSocket)
 {
     Socket &serverSocket = m_Socket;
@@ -184,16 +198,9 @@ void Server::ClientLoop(Socket clientSocket)
         }
         catch (ConnectionClosedException &e)
         {
-            //TODO: parar de usar for, usar uma classe apropriada, eventos etc... coisa pra daqui a um mes.
-            size_t pos;
-            for (pos = 0; pos < m_ConnectedSockets.size(); pos++)
-                if (m_ConnectedSockets[pos] == clientSocket)
-                    break;
+            clientSocket.Shutdown();
 
-            if (pos < m_ConnectedSockets.size())
-                m_ConnectedSockets.erase(m_ConnectedSockets.begin() + pos);
-
-            OnClientCountChanged();
+            OnSocketClosed(clientSocket);
 
             if (m_Running)
                 m_CurrentTUI->Notify(tui::text::Text{nickname}.FYellow().Bold() + " desconectou"_fmag);
@@ -205,8 +212,11 @@ void Server::ClientLoop(Socket clientSocket)
 void Server::CloseAllSockets()
 {
     for (auto &socket : m_ConnectedSockets)
-        socket.Close();
-    m_Socket.Close();
+        Kick(socket);
+
+    m_ConnectedSockets.clear();
+
+    m_Socket.Shutdown();
 }
 
 void Server::OnClientCountChanged()
@@ -221,7 +231,8 @@ void Server::OnClientCountChanged()
     {
         const std::string &nickname = m_UserSockets.GetUserNick(onlineClient);
         onlineSS << nickname;
-        if (len-- > 1) onlineSS << ", ";
+        if (len-- > 1)
+            onlineSS << ", ";
     }
 
     std::string payload(onlineSS.str());
@@ -233,7 +244,7 @@ void Server::OnClientCountChanged()
     }
 
     if (m_CurrentTUI != nullptr)
-        m_CurrentTUI->SetOnline(payload.c_str()+7); //Everything after online=
+        m_CurrentTUI->SetOnline(payload.c_str() + 7); //Everything after online=
 }
 
 void Server::Start()
@@ -270,12 +281,13 @@ void Server::RequestStopSlave()
 {
     m_Running = false;
     CloseAllSockets();
-    for (auto &thread : m_Threads) {
+    for (auto &thread : m_Threads)
+    {
         if (thread->joinable())
             thread->join();
         delete thread;
     }
-    if (m_AcceptThread->joinable())
+    if (m_AcceptThread != nullptr && m_AcceptThread->joinable())
         m_AcceptThread->join();
 
     delete m_AcceptThread;
@@ -340,19 +352,7 @@ void Server::ForwardMessageLoop()
 
 Server::~Server()
 {
-    CloseAllSockets();
-    m_ConnectedSockets.clear();
-    for (auto &thread : m_Threads)
-    {
-        if (thread->joinable())
-            thread->join();
-        delete thread;
-    }
-    if (m_AcceptThread != nullptr && m_AcceptThread->joinable())
-        m_AcceptThread->join();
-    delete m_AcceptThread;
-    m_Threads.clear();
-    m_AcceptThread = nullptr;
-
+    if (m_Running)
+        RequestStopSlave();
     delete m_CurrentTUI;
 }

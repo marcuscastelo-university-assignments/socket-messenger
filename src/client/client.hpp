@@ -24,7 +24,7 @@ class Client
     std::thread *m_ServerSlaveThread = nullptr;
     tui::ClientTUI *m_CurrentTUI = nullptr;
 
-    inline void CloseSockets() { m_Socket.Close(); }
+    inline void CloseSockets() { m_Socket.Shutdown(); }
 
     /**
      * Função que continuamente lê os dados recebidos do servidor enquanto funcionando

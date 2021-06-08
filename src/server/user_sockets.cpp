@@ -34,14 +34,14 @@ bool UserSockets::IsUserRegistered(const std::string &nickname)
     return FindByNick(nickname) != m_NickToSocket.end();
 }
 
-const std::string &UserSockets::GetUserNick(const Socket &userSocket)
+const std::string &UserSockets::GetUserNick(const Socket &userSocket) const
 {
     auto it = m_SocketToNick.find(userSocket);
     if (it == m_SocketToNick.end())
         throw std::logic_error("Cannot get user (sock) since it is not registered");
     return it->second;
 }
-const Socket &UserSockets::GetUserSocket(const std::string &nickname)
+const Socket &UserSockets::GetUserSocket(const std::string &nickname) const
 {
     auto it = m_NickToSocket.find(nickname);
     if (it == m_NickToSocket.end())

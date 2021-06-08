@@ -170,7 +170,7 @@ public:
      *
      * Retorno: void
     */
-    void Close();
+    void Shutdown() const;
 
     /**
      * Função responsável por aceitar uma nova conexão de socket
