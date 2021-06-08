@@ -1,4 +1,6 @@
-//ifndef para o header socket.hpp
+/**
+ * Header criado para organizar todas as funções do Socket
+*/
 #pragma once
 
 //Includes utlizados para os sockets

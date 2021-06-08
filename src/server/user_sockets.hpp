@@ -1,3 +1,6 @@
+/**
+ * Header criado para facilitar manuseio dos clientes dentro do servidor (armazenar nomes e sockets enquanto mapeia)
+*/
 #pragma once
 
 #include <unordered_map>

@@ -1,3 +1,7 @@
+/**
+ * Header criado para facilitar a organização das funções responsáveis
+ * por printar na interface do usuário
+*/
 #pragma once
 
 #include "client.hpp"
