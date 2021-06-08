@@ -14,12 +14,17 @@ using namespace tui::text_literals;
 
 namespace tui
 {
+	//Classe ClientTUI, responsável por todo tratamento de print out para o client
     class ClientTUI
     {
+		//Armazena o cliente em questão
         Client &m_Client;
 
+		//Verificação se está ativo
         bool m_Running = false;
 
+		//Função que atualiza o header do cliente, sempre mostrando seu nickname, quem está online
+		// e também uma frase do dia
         void UpdateHeader()
         {
             tui::savePos();
@@ -82,10 +87,19 @@ namespace tui
 
         std::string m_OnlineStr;
     public:
+		//Construtor da classe ClientTUI
         ClientTUI(Client &client) : m_Client(client) {}
 
+		//Função que retorna um bool; Verifica se o cliente está online
         inline bool IsRunning() { return m_Running; }
 
+		/**
+		 * Função que atualiza os nicknames de todos os clientes onlines nos headers de todos os clientes
+		 * 
+		 * Parâmetros:	const std::string &onlineStr	=>	String que armazena os nicknames de usuários online
+		 * 
+		 * Retorno: void
+		*/
         void SetOnline(const std::string &onlineStr)
         {
             int onlineCount = onlineStr.empty() ? 0 : 1;
@@ -97,6 +111,13 @@ namespace tui
             UpdateHeader();
         }
 
+		/**
+		 * Função que recepciona o cliente e faz a chamada das outras funções essenciais para a interface do cliente
+		 * 
+		 * Parâmetros: void
+		 * 
+		 * Retorno: void
+		*/
         void Enter()
         {
             m_Running = true;
@@ -127,12 +148,17 @@ namespace tui
                 cursor(0, headerStartY + headerLenY + 1);
                 tui::print(tui::text::Text{"> "_fgre});
                 std::string command = tui::readline();
+
+				//O cliente possui 3 funcionalidades
+
+				//Saída (desconexão) do servidor
                 if (command == "exit")
                 {
                     delLineR();
                     printl("Exiting..."_fblu);
                     m_Client.RequestExit();
                 }
+				//Envia mensagem privada para um usuário conectado
                 else if (command == "chat")
                 {
                     m_Client.GetReceivedMessages();
@@ -151,6 +177,7 @@ namespace tui
                     //TODO: try catch em outra classe ou arquivo
                     m_Client.SendMessage({m_Client.GetNickname(), toUser, content});
                 }
+				//Printa todos os 3 comandos que um usuário pode executar
                 else if (command == "help")
                 {
                     const static std::string commandsHelp[] = {
@@ -177,13 +204,26 @@ namespace tui
             tui::rbScreen();
         }
 
-        void
-        RequestExit()
+		/**
+		 * Função que setta o usuário como desconectado
+		 * 
+		 * Parâmetros:	void
+		 * 
+		 * Retorno:	void
+		*/
+        void RequestExit()
         {
             m_Running = false;
             //TODO: close stdin?
         }
 
+		/**
+		 * Função que notifica (printa na tela do usuário) as informações recebidas do servidor
+		 * 
+		 * Parâmetros:	const std::string &serverNotification	=>	String do servidor com as informações
+		 * 
+		 * Retorno:	void
+		*/
         void Notify(const std::string &serverNotification)
         {
             tui::pauseReadline();
