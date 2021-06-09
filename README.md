@@ -16,7 +16,7 @@ The idea of the application is to implement sockets and threads in C++. This is 
 
 It's a TUI (Terminal User Interface) application with a interactive prompt and some specific areas for notifications.
 
-[Demonstrative video](github/full_video.mkv)
+[Demonstrative video](github/full_video.webm)
 
 
 ### Available commands
