@@ -16,13 +16,23 @@ The idea of the application is to implement sockets and threads in C++. This is 
 
 It's a TUI (Terminal User Interface) application with a interactive prompt and some specific areas for notifications.
 
-# ****Here are some screenshots:-------
+[Demonstrative video](github/full_video.mkv)
 
-![client main page]()
-![server main page]()
 
-![client sending message]()
-![client receiving message]()
+### Available commands
+
+#### Client
+![client commands](github/client_commands.png)
+#### Server
+![server commands](github/server_commands.png)
+
+
+### Send (Right) & Receive (Left) example
+
+![client sending/receiving message](github/client_sendreceive.png)
+
+sender types `chat`, `receiver` and then `conteudo da mensagem 2...`.
+when sender hits enter, the message is sent to receiver.
 
 ## Installation
 
