@@ -72,7 +72,7 @@ namespace tui
 
         auto screenSize = tui::getSize();
         cursor(1, 1);
-        printl("  Zaplan (Client) v0.1"_fgre.Bold());
+        printl("  Zaplan (Client) v0.2"_fgre.Bold());
 
         tui::paint(1, headerStartY, screenSize.first, headerStartY + headerLenY, text::TextColorB::None);
         tui::paint(1 + headerMarginX, headerStartY, screenSize.first - headerMarginX, headerStartY + headerLenY - 1, text::TextColorB::Black);

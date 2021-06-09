@@ -12,11 +12,13 @@ namespace tui
     {
         savePos();
 
-        int maxMessages = getSize().second - (headerLenY + headerStartY + 3 + 3);
+        int maxMessages = getSize().second - (headerLenY + headerStartY + 3);
         cursor(1, getSize().second - 1);
         int printedMessages = 0;
         for (auto rit = m_Log.rbegin(); printedMessages < maxMessages && rit != m_Log.rend(); rit++)
         {
+            delLineR();
+            left(999);
             print(*rit);
             ups();
             printedMessages++;
@@ -68,7 +70,7 @@ namespace tui
 
         auto screenSize = tui::getSize();
         cursor(1, 1);
-        printl("  Zaplan (Server) v0.1"_fgre.Bold());
+        printl("  Zaplan (Server) v0.2"_fgre.Bold());
 
         tui::paint(1, headerStartY, screenSize.first, headerStartY + headerLenY, text::TextColorB::None);
         tui::paint(1 + headerMarginX, headerStartY, screenSize.first - headerMarginX, headerStartY + headerLenY - 1, text::TextColorB::Black);
@@ -123,6 +125,7 @@ namespace tui
             tui::clear();
             fflush(stdout);
             UpdateScreen();
+            PrintLog();
             cursor(2 + headerMarginX, headerStartY + headerLenY + 1);
             std::string command = tui::readline();
             tui::clear();

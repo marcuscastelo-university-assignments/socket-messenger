@@ -26,7 +26,7 @@ int main(int argc, char const *argv[])
 {
     std::srand(time(NULL));
     tui::clear();
-    tui::printl("Inicializando Zaplan v0.1 - Cliente"_fgre);
+    tui::printl("Inicializando Zaplan v0.2 - Cliente"_fgre);
 
     //Caso nenhum ip de servidor seja fornecido
     const std::string defaultServerIP("127.0.0.1");
@@ -51,6 +51,6 @@ int main(int argc, char const *argv[])
     
     client.Start();
 
-    tui::printl("Zaplan (Cliente) v0.1 encerrado com sucesso."_fyel);
+    tui::printl("Zaplan (Cliente) v0.2 encerrado com sucesso."_fyel);
     return 0;
 }
