@@ -49,7 +49,7 @@ namespace tui
             "Programar é igual andar de bicicleta, mas está tudo pegando fogo e você não sabe andar de bicicleta",
             "Não se suicide. Devemos viver mais que nossos inimigos",
             "Não desanime com a derrota de hoje. Amanhã tem mais!",
-            "Só vai dar errado se você tentar"
+            "Só vai dar errado se você tentar",
             "Mid or feed - Albert Einstein",
             "Rush B!!!",
         };
