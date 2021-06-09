@@ -14,12 +14,16 @@ namespace tui
     {
         Server &m_Server;
 
+		std::vector<tui::text::Text> m_Log = {};
 		
 		//Verificação se está ativo
         bool m_Running = false;
 
 		//Função que atualiza o header do servidor, com o status (online/offline) e quem está online
-        void UpdateHeader();
+        void UpdateScreen();
+
+		//Funcão que printa o log mais recente em baixo do prompt
+		void PrintLog();
 
         int headerStartY = 3, headerLenY = 7, headerMarginB = 1, headerMarginX = 2;
 

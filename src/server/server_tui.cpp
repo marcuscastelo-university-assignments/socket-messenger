@@ -3,27 +3,32 @@
 
 using namespace tui::text_literals;
 using namespace tui::text;
+using namespace tui;
 
 namespace tui
 {
 
-    void ServerTUI::UpdateHeader()
+    void ServerTUI::PrintLog()
     {
-        tui::savePos();
-        tui::pauseReadline();
+        savePos();
 
-        auto screenSize = tui::getSize();
+        int maxMessages = getSize().second - (headerLenY + headerStartY + 3 + 3);
+        cursor(1, getSize().second - 1);
+        int printedMessages = 0;
+        for (auto rit = m_Log.rbegin(); printedMessages < maxMessages && rit != m_Log.rend(); rit++)
+        {
+            print(*rit);
+            ups();
+            printedMessages++;
+        }
 
-        tui::paint(1, headerStartY, screenSize.first, headerStartY + headerLenY, text::TextColorB::None);
-        tui::paint(1 + headerMarginX, headerStartY, screenSize.first - headerMarginX, headerStartY + headerLenY - 1, text::TextColorB::Black);
+        rbPos();
 
-        cursor(4, headerStartY + 1);
-        std::cout << "Status: "_bbla
-                  << (m_Server.IsRunning() ? "Online"_fgre : "Offline"_fred).BBlack().Bold();
+        fflush(stdout);
+    }
 
-        cursor(4, headerStartY + 3);
-        std::cout << m_OnlineStr;
-
+    void ServerTUI::UpdateScreen()
+    {
         const static std::vector<std::string> frasesDoWhatsDaTia = {
             "Beba água, sério",
             "A cada 1 minuto, 60 segundos se passam na Africa",
@@ -40,7 +45,7 @@ namespace tui
             "Programar é igual andar de bicicleta, mas está tudo pegando fogo e você não sabe andar de bicicleta",
             "Não se suicide. Devemos viver mais que nossos inimigos",
             "Não desanime com a derrota de hoje. Amanhã tem mais!",
-            "Só vai dar errado se você tentar"
+            "Só vai dar errado se você tentar",
             "Mid or feed - Albert Einstein",
             "Rush B!!!",
         };
@@ -53,19 +58,38 @@ namespace tui
         {
             if (i % maxLetter == 0)
             {
-                
                 motd.insert(i - 1, "\n");
             }
         }
 
+        int motdlines = 1 + motd.length() / maxLetter;
+
+        headerLenY = 8 + motdlines;
+
+        auto screenSize = tui::getSize();
+        cursor(1, 1);
+        printl("  Zaplan (Server) v0.1"_fgre.Bold());
+
+        tui::paint(1, headerStartY, screenSize.first, headerStartY + headerLenY, text::TextColorB::None);
+        tui::paint(1 + headerMarginX, headerStartY, screenSize.first - headerMarginX, headerStartY + headerLenY - 1, text::TextColorB::Black);
+
+        cursor(4, headerStartY + 1);
+        std::cout << "Status: "_bbla
+                  << (m_Server.IsRunning() ? "Online"_fgre : "Offline"_fred).BBlack().Bold();
+
+        cursor(4, headerStartY + 3);
+        std::cout << m_OnlineStr;
+
         cursor(4, headerStartY + 5);
         std::cout << motd.BBlack() << std::endl;
 
-        cursor(4, headerStartY + 7);
-        tui::print("  Digite help para obter ajuda"_fblu);
+        cursor(4, headerStartY + 5 + (1 + motdlines));
+        tui::print("Digite help para obter ajuda"_fblu.BBlack());
+        tui::creset();
 
-        tui::unpauseReadline();
-        tui::rbPos();
+        cursor(headerMarginX, headerStartY + headerLenY + 1);
+        tui::print(tui::text::Text{"> "_fgre});
+
         fflush(stdout);
         // cursor(3, headerStartY + headerLenY + 1);
     }
@@ -78,66 +102,78 @@ namespace tui
                 onlineCount++;
 
         m_OnlineStr = "Usuários conectados ("_fwhi.BBlack() + tui::text::Text{std::to_string(onlineCount)}.FYellow().BBlack() + "): "_fwhi.BBlack() + tui::text::Text{onlineStr}.BBlack();
-        UpdateHeader();
+
+        tui::pauseReadline();
+        tui::savePos();
+
+        UpdateScreen();
+
+        tui::rbPos();
+        tui::unpauseReadline();
+        fflush(stdout);
     }
 
     void ServerTUI::Enter()
     {
         m_Running = true;
-        tui::savePos();
         tui::saveScreen();
-        tui::clear();
-
-        printl("  Zaplan (Server) v0.1"_fgre.Bold());
-        UpdateHeader();
 
         while (m_Running)
         {
-            cursor(0, headerStartY + headerLenY + 2);
-            tui::creset();
-            tui::delLineR();
-            cursor(0, headerStartY + headerLenY + 2);
-            tui::print(tui::text::Text{"> "_fgre});
+            tui::clear();
+            fflush(stdout);
+            UpdateScreen();
+            cursor(2 + headerMarginX, headerStartY + headerLenY + 1);
             std::string command = tui::readline();
-            if (command.size() == 0) continue;
+            tui::clear();
+            UpdateScreen();
+
+            if (command.size() == 0)
+                continue;
             else if (command == "exit")
             {
                 tui::printl("Exiting..."_fblu);
                 m_Server.RequestStop();
             }
-            else if (command == "stop") {
-                if (!m_Server.IsRunning()) {
+            else if (command == "stop")
+            {
+                if (!m_Server.IsRunning())
+                {
                     Notify("O Servidor não está em execução! ignorando comando"_fyel);
                     continue;
                 }
                 tui::printl("Stopping..."_fblu);
                 m_Server.RequestStopSlave();
-                UpdateHeader();
             }
-            else if (command == "start") {
-                if (m_Server.IsRunning()) {
+            else if (command == "start")
+            {
+                if (m_Server.IsRunning())
+                {
                     Notify("O Servidor já está em execução! ignorando comando"_fyel);
                     continue;
                 }
                 tui::printl("Starting..."_fblu);
                 m_Server.Start();
-                UpdateHeader();
             }
-            else if (command.substr(0,4)== "kick") {
-                if (command.size() < 6) {
+            else if (command.substr(0, 4) == "kick")
+            {
+                if (command.size() < 6)
+                {
                     Notify("Erro de syntaxe."_fred + " uso correto: \n\tkick <nickname>");
                     continue;
                 }
 
                 std::string nickname = command.substr(5);
-                if (!m_Server.GetUserSockets().IsUserRegistered(nickname)) {
+                //FIXME: usar mutex { (tb tem outro lugar mto parecido (isRegistered))
+                if (!m_Server.GetUserSockets().IsUserRegistered(nickname))
+                {
                     Notify("User "_fred + Text{nickname}.FYellow().Bold() + " doesn't exist"_fred);
                     continue;
                 }
 
-                const Socket &userSocket = m_Server.GetUserSockets().GetUserSocket(nickname);
-
-                m_Server.Kick(userSocket);
+                User user = *m_Server.GetUserSockets().FindByNick(nickname);
+                //}
+                m_Server.Kick(user.m_Socket);
             }
             else if (command == "help")
             {
@@ -160,31 +196,30 @@ namespace tui
                 print(ss.str());
                 tui::readline(1);
             }
-            else {
+            else
+            {
                 Notify("Commando inválido: " + command);
                 continue;
             }
         }
 
         tui::rbScreen();
-        tui::rbPos();
+        fflush(stdout);
     }
 
     void ServerTUI::Notify(const std::string &notification)
     {
-        tui::pauseReadline();
-        tui::savePos();
+        m_Log.push_back(notification);
+        PrintLog();
+        // tui::pauseReadline();
+        // tui::savePos();
+        // UpdateScreen();
 
-        tui::downs(4);
-        tui::delLineR();
-        tui::up();
-        tui::delLineR();
-        tui::up();
-        tui::delLineR();
-        tui::print(notification);
+        // cursor(getSize().first - 1, getSize().second - 1);
+        // tui::print(notification);
 
-        tui::rbPos();
-        tui::unpauseReadline();
-        fflush(stdout);
+        // tui::rbPos();
+        // tui::unpauseReadline();
+        // fflush(stdout);
     }
 }

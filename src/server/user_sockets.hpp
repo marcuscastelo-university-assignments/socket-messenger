@@ -8,6 +8,42 @@
 #include "socket.hpp"
 
 #include <mutex>
+#include <memory>
+
+using guard = std::lock_guard<std::mutex>;
+
+struct User
+{
+	SocketRef m_Socket;
+	std::string m_Nick;
+
+	User() {}
+	User(const User &other) : m_Socket(other.m_Socket), m_Nick(other.m_Nick) {}
+	User(User &&moveUser) : m_Socket(std::move(moveUser.m_Socket)), m_Nick(std::move(moveUser.m_Nick)) {}
+	User &operator=(const User& other) {
+		m_Socket = other.m_Socket;
+		m_Nick = other.m_Nick;
+		return *this;
+	}
+
+	bool operator==(const User& other) const {
+		return other.m_Nick == m_Nick && other.m_Socket.get() == m_Socket.get();
+	}
+};
+
+namespace std
+{
+	template <>
+	struct hash<struct User>
+	{
+		size_t operator()(const User &user) const
+		{
+			return std::hash<Socket>()(*user.m_Socket.get()) ^ std::hash<std::string>()(user.m_Nick);
+		}
+	};
+}
+
+using SocketFD = int;
 
 /**
 	 * Estrutura criada para facilitar gerenciamento dos clientes
@@ -18,25 +54,24 @@
 
 class UserSockets
 {
-	//Mapeia nome do cliente pelo Socket
-    std::unordered_map<std::string, Socket> m_NickToSocket = {};
-	//Mapeia socket pelo nome do cliente
-    std::unordered_map<Socket, std::string> m_SocketToNick = {};
+	std::vector<User> m_Users;
 
-    inline std::unordered_map<std::string, Socket>::iterator FindByNick(const std::string &nick) { return m_NickToSocket.find(nick); }
-    inline std::unordered_map<Socket, std::string>::iterator FindBySocket(const Socket &socket) { return m_SocketToNick.find(socket); }
+	//Mapeia nome do cliente pelo Socket
+	std::unordered_map<std::string, User> m_NickToUser = {};
+	//Mapeia socket pelo nome do cliente
+	std::unordered_map<SocketFD, User> m_SocketToUser = {};
 
 	mutable std::mutex m_Mutex;
+
 public:
 	/**
 	 * Função que registra um usuário nos mapas
 	 * 
-	 * Parâmetros:	const std::string &nickname	=>	String com o nome do cliente
-	 * 				const Socket &socket		=>	Socket do cliente
+	 * Parâmetros:	const User& user => usuário a ser registrado
 	 * 
 	 * Retorno: void
 	*/
-    void RegisterUser(const std::string &nickname, const Socket &socket);
+	void RegisterUser(const User &user);
 
 	/**
 	 * Funções que apagam um usuário dos mapas
@@ -46,8 +81,8 @@ public:
 	 * 
 	 * Retorno: void
 	*/
-    void UnregisterUser(const Socket &userSocket);
-    void UnregisterUser(const std::string &nickname);
+	void UnregisterUser(const Socket &userSocket);
+	void UnregisterUser(const std::string &nickname);
 
 	/**
 	 * Funções que verificam se um dado cliente (nickname ou socket) está registrado
@@ -58,18 +93,20 @@ public:
 	 * Retorno: bool	=>	true se está registrado
 	 * 						Se não, false
 	*/
-    bool IsUserRegistered(const Socket &userSocket);
-    bool IsUserRegistered(const std::string &nickname);
+	bool IsUserRegistered(const Socket &userSocket);
+	bool IsUserRegistered(const std::string &nickname);
 
-	/**
-	 * Funções que retornam o nome ao buscar pelo socket, ou vice versa
-	 * 
-	 * Parâmetros:	const std::string &nickname	=>	String com o nome do cliente
-	 * 				const Socket &userSocket	=>	Socket do cliente
-	 * 
-	 * Retorno: const std::string	=>	Nome do usuário (busca pelo socket)
-	 * 			const Socket		=>	Socket do usuário (busca pelo nome)
-	*/
-    const std::string &GetUserNick(const Socket &userSocket) const;
-    const Socket &GetUserSocket(const std::string &nickname) const;
+	User *FindByNick(const std::string &nick);
+	User *FindBySocket(const Socket &socket);
+
+	//FIXME: não está sendo lockada pelo mutex
+	inline const std::vector<User> &ListUsers() { return m_Users; }
+
+	inline void UnregisterAllUsers()
+	{
+		guard g_(m_Mutex);
+		m_NickToUser.clear();
+		m_SocketToUser.clear();
+		m_Users.clear();
+	}
 };

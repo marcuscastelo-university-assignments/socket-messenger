@@ -98,7 +98,9 @@ void Client::ServerSlaveLoop()
             {
                 Message receivedMessage(data);
                 m_Messages.push_back(receivedMessage);
-                m_CurrentTUI->Notify("<<<"_fcya + " (" + Text{receivedMessage.FromUser}.FYellow().Bold() + "): " + receivedMessage.Content);
+                m_CurrentTUI->PrintMessages("*");
+                
+                // ("<<<"_fcya + " (" + Text{receivedMessage.FromUser}.FYellow().Bold() + "): " + receivedMessage.Content);
             }
             else if (strncmp(data.buf, "online=", 7) == 0) {
                 

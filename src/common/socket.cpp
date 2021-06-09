@@ -105,7 +105,7 @@ void Socket::Shutdown() const
     shutdown(m_SocketFD, SHUT_RDWR);
 }
 
-Socket Socket::Accept()
+SocketRef Socket::Accept()
 {
     struct sockaddr_in remoteaddr;
     socklen_t remoteaddr_len = sizeof(remoteaddr);
@@ -119,7 +119,7 @@ Socket Socket::Accept()
 
     m_AcceptedSockets.push_back(sockClientFD);
 
-    return Socket(sockClientFD, m_Type, clientAddress);
+    return std::make_shared<Socket>(sockClientFD, m_Type, clientAddress);
 }
 
 SocketBuffer Socket::Read(int bufferMaxSize) const

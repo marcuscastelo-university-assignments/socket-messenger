@@ -40,28 +40,26 @@ class Server
 
     std::vector<std::thread *> m_Threads = {};
 
-    //FIXME: Maybe redundant with UserSockets
-    std::vector<Socket> m_ConnectedSockets = {};
-
     std::thread *m_AcceptThread = nullptr;
 
     std::vector<Message> m_MessagesToSend = {};
 
     UserSockets m_UserSockets;
 
-    struct {
+    struct
+    {
         std::mutex m_MessagesToSendMutex;
     } m_Mutexes;
 
     /**
-    * Função auxiliar que registra o nick do usuário e seu socket correspondente impedindo repetições
+    * Função auxiliar que registra o nick do usuário impedindo repetições
     * 
-    * Parâmetros:  const Socket &clientSocket	=>	Socket do  cliente 
+    * Parâmetros:  User &user	=>	cliente que será autenticado 
     * 
     * Return: bool	=>	Caso o login seja bem sucedido - true
     * 					Se não, false
     */
-    bool LoginUser(const Socket &clientSocket);
+    bool RegisterUser(User &user);
 
     /**
     * Função responsavel pela entrada de clientes, armazenando seus sockets e nicknames e 
@@ -76,11 +74,11 @@ class Server
     /**
     * Função responsável por receber e armazenar mensagens enviadas pelo cliente 
     *
-    * Parâmetros: Socket clientSocket  => possui as informações a serem armazenadas
+    * Parâmetros: User user  => possui as informações a serem armazenadas
     *
     * Retorno: Void
     */
-    void ClientLoop(Socket clientSocket);
+    void ClientLoop(User user);
 
     /**
     * Função responsável por reenviar a mensagem recebida do cliente para o cliente alvo
@@ -122,7 +120,7 @@ public:
     * 
     * Retorno: Void
     */
-    void OnSocketClosed(const Socket &closedSocket);
+    void OnSocketClosed(SocketRef closedSocket);
 
     /**
     * Função responsável por iniciar o servidor inicializando as threads necessárias para 
@@ -179,22 +177,17 @@ public:
      * 
      * Retorno: Void
      */
-    inline void Kick(const Socket &clientSocket)
+    inline void Kick(SocketRef clientSocket)
     {
+        clientSocket->Send({"bye", 4});
+        std::this_thread::sleep_for(1s);
         OnSocketClosed(clientSocket);
-        
-        std::thread temp([&clientSocket]() {
-            clientSocket.Send({"bye", 4});
-            std::this_thread::sleep_for(2s);
-            clientSocket.Shutdown();
-        });
-        temp.detach();
+        clientSocket->Shutdown();
     }
 
     inline bool IsRunning() { return m_Running; }
 
-
-     /**
+    /**
      * Função que encera o servidor caso este esteja online e deleta sua TUI
      * 
      * Parâmetros: Nenhum

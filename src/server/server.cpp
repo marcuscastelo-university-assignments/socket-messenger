@@ -66,22 +66,20 @@ void parseClientName(SocketBuffer *recBuf, char *&command, char *&nick)
     }
 }
 
-bool Server::LoginUser(const Socket &clientSocket)
+bool Server::RegisterUser(User &user)
 {
 
-    SocketBuffer recBuf = clientSocket.Read();
+    SocketBuffer recBuf = user.m_Socket->Read();
+
+    //Comando incorreto
+    if (strncmp(recBuf.buf, "nick", 4) != 0)
+        return false;
 
     char *command = recBuf.buf;
     char *nick = recBuf.buf;
-
     parseClientName(&recBuf, command, nick);
-
     std::string strCommand(command);
     std::string strNick(nick);
-
-    //Wrong command
-    if (strCommand != "nick")
-        return false;
 
     //No nick provided (nick pointer not changed)
     if (nick == recBuf.buf)
@@ -92,7 +90,8 @@ bool Server::LoginUser(const Socket &clientSocket)
         return false;
     }
 
-    m_UserSockets.RegisterUser(strNick, clientSocket);
+    user.m_Nick = strNick;
+    m_UserSockets.RegisterUser(user);
 
     return true;
 }
@@ -102,10 +101,11 @@ void Server::AcceptLoop()
     m_CurrentTUI->Notify("Aguardando conexões de clientes..."_fgre);
     while (m_Running)
     {
-        std::unique_ptr<Socket> clientSocket;
+        User currentUser;
+
         try
         {
-            clientSocket.reset(new Socket(m_Socket.Accept()));
+            currentUser.m_Socket = m_Socket.Accept();
         }
         catch (SocketAcceptException &e)
         {
@@ -120,16 +120,18 @@ void Server::AcceptLoop()
             continue;
         }
 
-        m_CurrentTUI->Notify("Nova conexão: "_fgre + clientSocket->GetAddress().ToString());
+        m_CurrentTUI->Notify("Nova conexão: "_fgre + currentUser.m_Socket->GetAddress().ToString());
+
+        //TODO: tirar sleeps
         std::this_thread::sleep_for(2s);
 
         try
         {
-            while (!LoginUser(*clientSocket))
+            while (!RegisterUser(currentUser))
             {
                 static const char *errorMessage = "INVALID_NICK\0";
                 static const size_t errorMessageLen = strlen(errorMessage) + 1;
-                clientSocket->Send(SocketBuffer{errorMessage, errorMessageLen});
+                currentUser.m_Socket->Send(SocketBuffer{errorMessage, errorMessageLen});
 
                 std::this_thread::sleep_for(1s);
             }
@@ -146,64 +148,51 @@ void Server::AcceptLoop()
             std::this_thread::sleep_for(5s);
         }
 
-        auto &nickname = m_UserSockets.GetUserNick(*clientSocket);
-
-        m_ConnectedSockets.push_back(*clientSocket);
         OnClientCountChanged();
 
-        m_CurrentTUI->Notify("Conexão autenticada com sucesso, "_fgre + tui::text::Text{clientSocket->GetAddress().ToString()}.FWhite() + " agora é identificado como "_fgre + tui::text::Text{nickname}.FYellow().Bold());
+        m_CurrentTUI->Notify("Conexão autenticada com sucesso, "_fgre + tui::text::Text{currentUser.m_Socket->GetAddress().ToString()}.FWhite() + " agora é identificado como "_fgre + tui::text::Text{currentUser.m_Nick}.FYellow().Bold());
 
-        std::thread *clientLoopThread = new std::thread(std::bind(&Server::ClientLoop, this, *clientSocket));
+        std::thread *clientLoopThread = new std::thread(std::bind(&Server::ClientLoop, this, currentUser));
         m_Threads.push_back(clientLoopThread);
     }
 }
 
-void Server::OnSocketClosed(const Socket &closedSocket)
+void Server::OnSocketClosed(SocketRef closedSocket)
 {
-
-    size_t pos;
-    for (pos = 0; pos < m_ConnectedSockets.size(); pos++)
-        if (m_ConnectedSockets[pos] == closedSocket)
-            break;
-
-    if (pos < m_ConnectedSockets.size())
-        m_ConnectedSockets.erase(m_ConnectedSockets.begin() + pos);
-
+    if (m_UserSockets.IsUserRegistered(*closedSocket.get()))
+        m_UserSockets.UnregisterUser(*closedSocket.get());
     OnClientCountChanged();
 }
 
-void Server::ClientLoop(Socket clientSocket)
+void Server::ClientLoop(User user)
 {
     Socket &serverSocket = m_Socket;
 
-    if (!m_UserSockets.IsUserRegistered(clientSocket))
+    if (!m_UserSockets.IsUserRegistered(user.m_Nick))
         return;
-
-    auto &nickname = m_UserSockets.GetUserNick(clientSocket);
 
     while (m_Running)
     {
         try
         {
-            SocketBuffer recBuf = clientSocket.Read();
-            Message message(nickname, recBuf);
-            m_CurrentTUI->Notify("Mensagem enfileirada: "_fwhi + tui::text::Text{nickname}.FYellow().Bold() + " -> "_fcya + tui::text::Text{message.ToUser}.FYellow().Bold() + " = \"" + message.Content + "\"");
+            SocketBuffer recBuf = user.m_Socket->Read();
+            Message message(user.m_Nick, recBuf);
 
-            std::this_thread::sleep_for(2s);
-
-            guard g_(m_Mutexes.m_MessagesToSendMutex);
+            m_CurrentTUI->Notify("Mensagem enfileirada: "_fwhi + tui::text::Text{user.m_Nick}.FYellow().Bold() + " -> "_fcya + tui::text::Text{message.ToUser}.FYellow().Bold() + " = \"" + message.Content + "\"");
             {
+                guard g_(m_Mutexes.m_MessagesToSendMutex);
                 m_MessagesToSend.push_back(message);
             }
         }
         catch (ConnectionClosedException &e)
         {
-            clientSocket.Shutdown();
+            OnSocketClosed(user.m_Socket);
 
-            OnSocketClosed(clientSocket);
+            //FIXME: isso ta certo??
+            user.m_Socket->Shutdown();
 
             if (m_Running)
-                m_CurrentTUI->Notify(tui::text::Text{nickname}.FYellow().Bold() + " desconectou"_fmag);
+                m_CurrentTUI->Notify(tui::text::Text{user.m_Nick}.FYellow().Bold() + " desconectou"_fmag);
             return;
         }
     }
@@ -211,55 +200,52 @@ void Server::ClientLoop(Socket clientSocket)
 
 void Server::CloseAllSockets()
 {
+    auto usersVecCopy = m_UserSockets.ListUsers();
 
-    while (!m_ConnectedSockets.empty())
+    while (!usersVecCopy.empty())
     {
-        auto &socket = m_ConnectedSockets.back();
-        m_ConnectedSockets.pop_back();
-        Kick(socket);
+        auto &user = usersVecCopy.back();
+        Kick(user.m_Socket);
+        // std::thread(std::bind(&Server::Kick, this, user.m_Socket)).detach();
+        usersVecCopy.pop_back();
     }
+    m_UserSockets.UnregisterAllUsers();
 
-    std::this_thread::sleep_for(4s);
-
-    m_ConnectedSockets.clear();
 
     m_Socket.Shutdown();
 }
 
 void Server::OnClientCountChanged()
 {
-
     std::stringstream onlineSS;
 
     onlineSS << "online=";
 
-    int len = m_ConnectedSockets.size();
-    for (const Socket &onlineClient : m_ConnectedSockets)
+    auto onlineUsersCpy = m_UserSockets.ListUsers();
+    int len = onlineUsersCpy.size();
+    for (const User &onlineUser : onlineUsersCpy)
     {
-        const std::string &nickname = m_UserSockets.GetUserNick(onlineClient);
-        onlineSS << nickname;
+        onlineSS << onlineUser.m_Nick;
         if (len-- > 1)
             onlineSS << ", ";
     }
 
     std::string payload(onlineSS.str());
 
-    for (const Socket &clientSocket : m_ConnectedSockets)
+    for (const User &onlineUser : onlineUsersCpy)
     {
-        std::thread tmp([&clientSocket, payload]()
-                        {
-                            //FIXME: native address is 0 here, why?
-                            try
-                            {
-                                clientSocket.Send({payload.c_str(), payload.length() + 1});
-                            }
-                            catch (const std::exception &e)
-                            {
-                            }
-                        });
-        tmp.detach();
+        //FIXME: native address is 0 here, why?
+        try
+        {
+            onlineUser.m_Socket->Send({payload.c_str(), payload.length() + 1});
+        }
+        catch (const std::exception &e)
+        {
+            //Ignore unavailable users
+            //TODO: maybe remove them? IDK
+            continue;
+        }
     }
-
     if (m_CurrentTUI != nullptr)
         m_CurrentTUI->SetOnline(payload.c_str() + 7); //Everything after online=
 }
@@ -320,22 +306,26 @@ void Server::RequestStopTUI()
 
 void Server::ForwardMessageLoop()
 {
-    std::vector<Message> messages = {};
-    guard g_(m_Mutexes.m_MessagesToSendMutex);
-    {
-        std::swap(messages, m_MessagesToSend);
-    }
 
     while (m_Running)
     {
+        std::vector<Message> messages = {};
+
+        {
+            guard g_(m_Mutexes.m_MessagesToSendMutex);
+            if (m_MessagesToSend.empty()) continue;
+
+            std::swap(messages, m_MessagesToSend);
+        }
+
         //itera todas as mensagens pendentes atualmente no servidor
         for (size_t i = 0; i < messages.size(); i++)
         {
             Message &message = messages[i];
 
-            const std::string &destUser = message.ToUser;
+            const std::string &destUserNick = message.ToUser;
 
-            if (!m_UserSockets.IsUserRegistered(destUser))
+            if (!m_UserSockets.IsUserRegistered(destUserNick))
             {
                 message.Content = "User " + message.ToUser + " not found (or offline)";
                 message.ToUser = message.FromUser;
@@ -344,13 +334,13 @@ void Server::ForwardMessageLoop()
                     continue;
             }
 
-            auto &destSocket = m_UserSockets.GetUserSocket(destUser);
+            auto &destUser = *m_UserSockets.FindByNick(destUserNick);
             m_CurrentTUI->Notify("Enviando mensagem:"_fwhi + tui::text::Text{" \"" + message.Content + "\""}.FCyan() + " de " + tui::text::Text{message.FromUser}.FYellow().Bold() + " para " + tui::text::Text{message.ToUser}.FYellow().Bold());
 
             std::this_thread::sleep_for(1s);
             try
             {
-                destSocket.Send(message.ToBuffer());
+                destUser.m_Socket->Send(message.ToBuffer());
             }
             catch (ConnectionClosedException &e)
             {
